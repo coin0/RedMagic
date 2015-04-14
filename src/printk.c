@@ -4,7 +4,7 @@
 
 static int vsprintf(char *buff, const char *format, va_list args);
 
-int sprintk(char *buff, const char *format, ...)
+int sprintf(char *buff, const char *format, ...)
 {
 	va_list args;
 	int i;

@@ -5,7 +5,8 @@
 #include "multiboot.h"
 #include "paging.h"
 
-// page calculation
+// page calculation -
+// PAGE_CONTAIN calculates how many pages needed
 #define PAGE_SIZE 0x1000
 #define PAGE_MASK (~(PAGE_SIZE-1))
 #define PAGE_ALIGN(addr) (((addr)+PAGE_SIZE - 1) & PAGE_MASK)

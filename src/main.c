@@ -39,7 +39,6 @@ int main(multiboot_t * mbp)
 	//print_cur_status();
 	//print_stack_trace();  
 	//init_timer(10000000);
-	//asm volatile ("sti");
 	//asm volatile ("int $0xe");
 
 	// All our initialisation calls will go in here.

@@ -72,62 +72,104 @@ void get_mem_info_from_multiboot(multiboot_t * mbp, mem_info_t * minfo)
 	minfo->avail_memory = mem_avail;
 }
 
-page_directory_t k_pgdir;
+// spaces for page tables are allocated when needed, good news is each page
+// table is equivalant to a page in size, use mmc to manage spaces consumption
+static mmc_t mm_pgtbls;
+static mem_info_t minfo;
+static void page_fault_handler(registers_t * regs);
 
 void init_paging()
 {
-	_u32 *base, pages, length;
-	mem_info_t minfo;
-	addr_range_t *p;
-	mmc_t kmm;
+	_u32 i, pgtbls_end = 0;
+	page_directory_t *pdp;
+	page_table_t *ptp;
+	addr_range_t *mp;
+	void *p;
 
-	// get total memory & available memory
+	// scan initial memory address space from 0x00
 	bzero((void *)&minfo, sizeof(mem_info_t));
 	get_mem_info_from_multiboot(mbootp, &minfo);
-
-	// how many pages actually needed to map whole memory
-	pages = PAGE_CONTAIN(minfo.total_memory);
-
-	//register_interrupt_handler(14, page_fault_handler);
-
-	//switch_page_directory(&k_pgdir);
-	while (1) ;
-
-	// map unavailable memory to the end of virtual address space
-	p = minfo.mmap_entries;
-
-	for (; (_u32) p < (_u32) minfo.mmap_entries + minfo.mmap_length; p++) {
-		if (p->type != ARDS_TYPE_AVAIL) {
-
+	mp = minfo.mmap_entries;
+	for (; (_u32) mp < (_u32) minfo.mmap_entries + minfo.mmap_length; mp++) {
+		if (mp->base_addr_low == 0x0 && mp->base_addr_high == 0x0) {
+			if (mp->type != ARDS_TYPE_AVAIL || mp->length_low == 0)
+				PANIC("Low address(0x0) not available.");
+			pgtbls_end = mp->length_low;
+			break;
 		}
 	}
 
-//coin front
+	// stop! where is the ARDS entry starting from 0x0?
+	ASSERT(pgtbls_end > 0);
 
-	//base = (void *)0x11000;
-	base = (void *)0;
-	length = PAGE_SIZE * 50;
+	// stop! space not enough, we need PGD_MAX page_directory_t entries 
+	// and at least 5 free frames)
+	ASSERT(PGD_BASE + sizeof(page_directory_t) * PGD_MAX + PAGE_SIZE * 5 <=
+	       0x0 + pgtbls_end);
 
-	// initialize memory
-	if (INIT_MM(&kmm, base, length))
-		PANIC("Memory initialization failed");
+	// initialize page directory tables
+	pdp = (page_directory_t *) PGD_BASE;
+	for (i = 0; i < PGD_MAX; i++) {
+		bzero((void *)pdp, sizeof(page_directory_t));
+	}
 
-	//void *a = alloc_frames(&mm, 5);
-	//void *d = alloc_frames(&mm, 1);
-	//void *b = alloc_frames(&mm, 1);
+	// initialize page tables areas
+	if (INIT_MM(&mm_pgtbls, (void *)&pdp[i], pgtbls_end - 1))
+		PANIC("MM_INIT failed");
+
+	// begin to initialize paging for kernel space
+	// we keep identical map (phys addr = virt addr) from
+	// K_SPACE_START -> K_SPACE_END
+	p = (void *)(K_SPACE_START & PAGE_MASK);
+	while ((_u32) p < PAGE_ALIGN(K_SPACE_END)) {
+		ptp = (page_table_t *) alloc_frames(&mm_pgtbls, 1);
+		if (ptp == NULL)
+			PANIC("No free frames");
+
+		// init PDE
+		pdp[PGD_IDX_KERNEL].tables[PDE_INDEX(p)] =
+		    (page_table_t *) ((_u32) ptp | PAGE_PRESENT | PAGE_WRITE |
+				      PAGE_USER);
+
+		// init PTE : 1024 pages per PT
+		bzero((void *)ptp, sizeof(page_table_t));
+		for (i = ((_u32) p >> 12) % 1024; i < 1024; i++) {
+			ptp->pages[PTE_INDEX(p)] =
+			    (page_entry_t) ((_u32) p | PAGE_PRESENT |
+					    PAGE_WRITE | PAGE_USER);
+
+			// next page entry
+			p = (void *)((_u32) p + PAGE_SIZE);
+		}
+	}
+
+	// register page fault handler and enable paging
+	register_interrupt_handler(14, &page_fault_handler);
+	switch_page_directory(&pdp[PGD_IDX_KERNEL]);
 }
 
-void page_fault_handler(registers_t regs)
+static void page_fault_handler(registers_t * regs)
 {
-	printk("\nIn specific handler !\n");
+	_u32 cr2;
+	char msg[64];
+
+	asm volatile ("mov %%cr2, %0":"=r" (cr2));
+	sprintf(msg, "*** PAGE FAULT @0x%08X, e=0x%08X", cr2, regs->err_code);
+	printk("\n%s\n", msg);
+
+	// stop here
+	while (1) ;
 }
 
 void switch_page_directory(page_directory_t * dir)
 {
-	asm volatile ("mov %0, %%cr3"::"r" (&dir->table_phy_addr));
 	_u32 cr0;
+
+	asm volatile ("mov %0, %%cr3"::"r" (&dir->tables));
+
+	// enable paging
 	asm volatile ("mov %%cr0, %0":"=r" (cr0));
-	cr0 |= 0x80000000;	// Enable paging!
+	cr0 |= 0x80000000;
 	asm volatile ("mov %0, %%cr0"::"r" (cr0));
 }
 
@@ -229,7 +271,7 @@ void *alloc_frames(mmc_t * mmcp, _u32 npages)
 	_u32 left, right, marker, n;
 
 	if (!tp)
-		PANIC("Out of memory");
+		return NULL;
 
 	// just put Red 
 	// |<R,R,R<|

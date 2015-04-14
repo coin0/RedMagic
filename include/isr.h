@@ -11,9 +11,21 @@
 
 typedef struct registers {
 	_u32 ds;		// Data segment selector
-	_u32 edi, esi, ebp, esp, ebx, edx, ecx, eax;	// Pushed by pusha.
-	_u32 int_no, err_code;	// Interrupt number and error code (if applicable)
-	_u32 eip, cs, eflags, useresp, ss;	// Pushed by the processor automatically.
+	_u32 edi;
+	_u32 esi;
+	_u32 ebp;
+	_u32 esp;
+	_u32 ebx;
+	_u32 edx;
+	_u32 ecx;
+	_u32 eax;		// Pushed by pusha.
+	_u32 int_no;
+	_u32 err_code;		// Interrupt number and error code (if applicable)
+	_u32 eip;
+	_u32 cs;
+	_u32 eflags;
+	_u32 useresp;
+	_u32 ss;		// Pushed by the processor automatically.
 } registers_t;
 
 // A few defines to make life a little easier
