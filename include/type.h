@@ -11,6 +11,7 @@ typedef unsigned char _u8;
 typedef char _s8;
 
 typedef _u32 size_t;
+typedef _u32 uint_t;
 
 #define NULL ((void *)0)
 #define OK 0

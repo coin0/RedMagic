@@ -7,7 +7,8 @@
 #include "print.h"
 #include "timer.h"
 #include "debug.h"
-#include "mm.h"
+#include "heap.h"
+#include "paging.h"
 
 multiboot_t *mbootp;
 
@@ -35,7 +36,9 @@ int main(multiboot_t * mbp)
 	show_kernel_pos();
 	show_ARDS_from_multiboot(mbp);
 	init_paging();
+	init_kheap();
 
+	kmalloc(10);
 	//print_cur_status();
 	//print_stack_trace();  
 	//init_timer(10000000);

@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "multiboot.h"
-#include "paging.h"
 
 // page calculation -
 // PAGE_CONTAIN calculates how many pages needed

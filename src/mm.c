@@ -1,9 +1,11 @@
-#include "mm.h"
 #include "print.h"
 #include "debug.h"
 #include "string.h"
+#include "mm.h"
 #include "paging.h"
+#include "heap.h"
 #include "boot.h"
+#include "klog.h"
 
 void show_kernel_pos()
 {
@@ -78,13 +80,27 @@ static mmc_t mm_pgtbls;
 static mem_info_t minfo;
 static void page_fault_handler(registers_t * regs);
 
+// following static functions have specific argument - flush that will refresh
+// page cache for CPU
+static int __page_map(void *virt_addr, void *phys_addr, page_directory_t * pdir,
+		      mmc_t * mp, int flush);
+static int __page_unmap(void *virt_addr, page_directory_t * pdir, int flush);
+
+// this mmc will manage use of frames for actual physical memory, we can get
+// physical memory usage and frame contents via series of interfaces.
+// mm_phys should be initialized before paging is switched on.
+static mmc_t mm_phys;
+
+// page directories begin from 0x00
+// page tables follow up with the end of page directories
 void init_paging()
 {
 	_u32 i, pgtbls_end = 0;
 	page_directory_t *pdp;
 	page_table_t *ptp;
 	addr_range_t *mp;
-	void *p;
+	void *p, *va, *_va;
+	_u32 map_start, map_end;
 
 	// scan initial memory address space from 0x00
 	bzero((void *)&minfo, sizeof(mem_info_t));
@@ -94,7 +110,7 @@ void init_paging()
 		if (mp->base_addr_low == 0x0 && mp->base_addr_high == 0x0) {
 			if (mp->type != ARDS_TYPE_AVAIL || mp->length_low == 0)
 				PANIC("Low address(0x0) not available.");
-			pgtbls_end = mp->length_low;
+			pgtbls_end = mp->base_addr_low + mp->length_low;
 			break;
 		}
 	}
@@ -114,7 +130,8 @@ void init_paging()
 	}
 
 	// initialize page tables areas
-	if (INIT_MM(&mm_pgtbls, (void *)&pdp[i], pgtbls_end - 1))
+	log_info("init memory for page tables ...\n");
+	if (INIT_MM(&mm_pgtbls, (void *)&pdp[i], pgtbls_end - (_u32) & pdp[i]))
 		PANIC("MM_INIT failed");
 
 	// begin to initialize paging for kernel space
@@ -143,9 +160,92 @@ void init_paging()
 		}
 	}
 
+	// begin to initialize paging for rest available memory
+	// for kernel heap and user spaces
+	va = (void *)PAGE_ALIGN(K_SPACE_END);
+	_va = va;
+	mp = minfo.mmap_entries;
+	for (; (_u32) mp < (_u32) minfo.mmap_entries + minfo.mmap_length; mp++) {
+		// only use memory after K_SPACE_END 
+		if (mp->type == ARDS_TYPE_AVAIL
+		    && mp->base_addr_low + mp->length_low >= (_u32) va) {
+			if (mp->base_addr_low < (_u32) va)
+				map_start = (_u32) va;
+			else
+				map_start = mp->base_addr_low;
+			map_end = mp->base_addr_low + mp->length_low;
+
+			// start mapping from K_SPACE_END
+			// first, check if PDE & PTE are present
+			p = (void *)PAGE_ALIGN(map_start);
+			while ((_u32) p < (map_end & PAGE_MASK)) {
+				if (__page_map
+				    (va, p, &pdp[PGD_IDX_KERNEL],
+				     &mm_pgtbls, 0) != OK)
+					PANIC("Page mapping failed");
+				p = (void *)((_u32) p + PAGE_SIZE);
+				va = (void *)((_u32) va + PAGE_SIZE);
+			}
+		}
+	}
+
+	// manage availabe physical memory by mmc
+	log_info("init memory for physical memory ...\n");
+	if (INIT_MM(&mm_phys, _va, va - _va))
+		PANIC("Physical memory init failed");
+
 	// register page fault handler and enable paging
 	register_interrupt_handler(14, &page_fault_handler);
 	switch_page_directory(&pdp[PGD_IDX_KERNEL]);
+}
+
+int page_map(void *virt_addr, void *phys_addr, page_directory_t * pdir,
+	     mmc_t * mp)
+{
+	return __page_map(virt_addr, phys_addr, pdir, mp, 1);
+}
+
+int page_unmap(void *virt_addr, page_directory_t * pdir)
+{
+	return __page_unmap(virt_addr, pdir, 1);
+}
+
+static int __page_map(void *virt_addr, void *phys_addr, page_directory_t * pdir,
+		      mmc_t * mp, int flush)
+{
+	page_table_t *ptp;
+	page_table_t **pdep =
+	    &pdir[PGD_IDX_KERNEL].tables[PDE_INDEX(virt_addr)];
+
+	if (*pdep == NULL) {
+		ptp = (page_table_t *) alloc_frames(mp, 1);
+		*pdep =
+		    (page_table_t *) ((_u32) ptp | PAGE_PRESENT | PAGE_WRITE |
+				      PAGE_USER);
+	} else {
+		ptp = *pdep;
+	}
+
+	ptp->pages[PTE_INDEX(virt_addr)] =
+	    (page_entry_t) ((_u32) phys_addr | PAGE_PRESENT | PAGE_WRITE |
+			    PAGE_USER);
+	if (flush)
+		asm volatile ("invlpg (%0)"::"a" ((_u32) virt_addr));
+
+	return 0;
+}
+
+static int __page_unmap(void *virt_addr, page_directory_t * pdir, int flush)
+{
+	page_table_t *ptp;
+
+	ptp = pdir[PGD_IDX_KERNEL].tables[PDE_INDEX(virt_addr)];
+	ptp->pages[PTE_INDEX(virt_addr)] = (page_entry_t) NULL;
+
+	if (flush)
+		asm volatile ("invlpg (%0)"::"a" ((_u32) virt_addr));
+
+	return 0;
 }
 
 static void page_fault_handler(registers_t * regs)
@@ -183,11 +283,10 @@ int MM_PAGE_TABLE(mmc_t * mmcp, void *base, _u32 length)
 	_u32 npg, pages;
 	_u32 meta_len;
 
-	printk("page_size = %d bytes\n", PAGE_SIZE);
-	printk("setup memory layout in type PAGE_TABLE\n");
+	log_info("page_size = %d bytes\n", PAGE_SIZE);
+	log_info("setup memory layout in type PAGE_TABLE\n");
 
 	// do not use space less/more than a page
-	bzero(base, length);
 	basep = (void *)PAGE_ALIGN((_u32) base);
 	endp = (void *)(((_u32) base + length) & PAGE_MASK);
 	meta = basep;
@@ -220,9 +319,13 @@ int MM_PAGE_TABLE(mmc_t * mmcp, void *base, _u32 length)
 	printk("table @ 0x%08X, free memory @ 0x%08X\n", (_u32) metap,
 	       (_u32) basep);
 	printk("%d frame(s), memory size %d KB\n", npg, PAGE_SIZE * npg / 1024);
-	for (; (_u32) metap < (_u32) meta + meta_len; metap++) {
-		*metap = (_u32) basep | PG_WHITE;
-		basep = (_u32 *) ((_u8 *) basep + PAGE_SIZE);
+	for (; (_u32) metap < (_u32) meta + mpg * PAGE_SIZE; metap++) {
+		if ((_u32) metap < (_u32) meta + meta_len) {
+			*metap = (_u32) basep | PG_WHITE;
+			basep = (_u32 *) ((_u8 *) basep + PAGE_SIZE);
+		} else {
+			bzero(metap, META_ENT_SIZE);
+		}
 	}
 	print_memory((void *)meta, 5);
 
@@ -310,8 +413,9 @@ void *alloc_frames(mmc_t * mmcp, _u32 npages)
 
 	mmcp->nfree -= npages;
 
-	printk("alloc %d pg, free %d pg\n", npages, mmcp->nfree);
-	print_memory((void *)mmcp->meta_base, 2);
+	log_dbg("alloc %d pg, free %d pg\n", npages, mmcp->nfree);
+	if (KLOG_DBG)
+		print_memory((void *)mmcp->meta_base, 2);
 	return (void *)(PAGE_MASK & (*tp));
 }
 
@@ -349,8 +453,9 @@ int free_frames(mmc_t * mmcp, void *mp)
 		left++;
 	}
 
-	printk("free 0x%08X, free %d pg\n", mp, mmcp->nfree);
-	print_memory((void *)mmcp->meta_base, 2);
+	log_dbg("free 0x%08X, free %d pg\n", mp, mmcp->nfree);
+	if (KLOG_DBG)
+		print_memory((void *)mmcp->meta_base, 2);
 	return 0;
 }
 

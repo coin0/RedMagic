@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "isr.h"
+#include "mm.h"
 
 // assum page dirs start from the second page of physical memory
 // the first page is reserved for the NULL pointer
@@ -63,5 +64,10 @@ typedef struct {
   Handler for page faults.
 **/
 extern void switch_page_directory(page_directory_t * dir);
+
+// map virtual address to physical address and unmap virtual address
+extern int page_map(void *virt_addr, void *phys_addr, page_directory_t * pdir,
+		    mmc_t * mp);
+extern int page_unmap(void *virt_addr, page_directory_t * pdir);
 
 #endif
