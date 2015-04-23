@@ -38,7 +38,10 @@ int main(multiboot_t * mbp)
 	init_paging();
 	init_kheap();
 
-	kmalloc(10);
+	void *p = kmalloc(4100);
+	void *a = kmalloc(120);
+	void *b = kmalloc(sizeof(mmc_t));
+	kfree(a);
 	//print_cur_status();
 	//print_stack_trace();  
 	//init_timer(10000000);

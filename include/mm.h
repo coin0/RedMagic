@@ -67,6 +67,22 @@ extern _u8 k_end[];
 
 extern void show_kernel_pos();
 extern void show_ARDS_from_multiboot(multiboot_t * mbp);
+
+// operations on mm_phys
+extern void *get_free_pages(size_t npg);
+extern void *get_free_page();
+extern void *get_zeroed_page();
+extern int free_pages(void *page);
+extern int free_page(void *page);
+
+// operations on mm_high
+extern void *get_free_pages_high(size_t npg);
+extern void *get_free_page_high();
+extern void *get_zeroed_page_high();
+extern int free_pages_high(void *page);
+extern int free_page_high(void *page);
+extern addr_t get_high_mem_start();
+
 extern void init_paging();
 extern void get_mem_info_from_multiboot(multiboot_t * mbp, mem_info_t * minfo);
 

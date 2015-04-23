@@ -5,6 +5,24 @@
 #include "isr.h"
 #include "mm.h"
 
+/*
+|ffffffff|  4G/32bit
+|        |
+|yyyyyyyy|  kheap end
+|        |
+|xxxxxxxx|  high memory start(mm_high), kheap
+|        |
+|01000000|  K_SPACE_END, Physical mem map(mm_phys)
+|        |
+|00100000|  Kernel entry
+|        |
+|00001000|  Page Directory(mm_pgtbls)
+|        |
+|00000000|  K_SPACE_START
+|________|
+
+*/
+
 // assum page dirs start from the second page of physical memory
 // the first page is reserved for the NULL pointer
 #define PGD_BASE         0x00001000
@@ -18,6 +36,10 @@
 // virtual address definition for kernel space
 #define K_SPACE_START	0x0	// equal to PGD_BASE for now
 #define K_SPACE_END	0x1000000
+
+// high memory
+// high memory start depends on actual physical memory length
+#define K_HMEM_END      0xC0000000
 
 // page entry masks
 #define PAGE_PRESENT    0x1
@@ -69,5 +91,10 @@ extern void switch_page_directory(page_directory_t * dir);
 extern int page_map(void *virt_addr, void *phys_addr, page_directory_t * pdir,
 		    mmc_t * mp);
 extern int page_unmap(void *virt_addr, page_directory_t * pdir);
+
+#define __virt_to_phys(pdir, va) ({ 	\
+	_u32 __addr = (_u32)(pdir)->tables[PDE_INDEX(va)] & PAGE_MASK;      \
+	__addr = (_u32)((page_table_t *)__addr)->pages[PTE_INDEX(va)] & PAGE_MASK;\
+	__addr | ((va) & (~PAGE_MASK)); })
 
 #endif

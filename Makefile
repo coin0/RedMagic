@@ -10,7 +10,7 @@ all: kernel
 run:
 	./run.sh
 
-build:clean kernel
+build:clean indent kernel
 
 kernel:
 	cd $(SRC) && make
