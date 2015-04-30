@@ -20,14 +20,15 @@ static void show_heap(heap_desc_t * heap);
 // global kernel heap descriptor
 static heap_desc_t kheap;
 
-int init_heap(heap_desc_t * heap, const char *name, size_t size)
+int init_heap(heap_desc_t * heap, mmc_t * mp, const char *name, size_t size)
 {
 	size_t pages = PAGE_CONTAIN(size);
-	void *start = get_free_pages_high(pages);
+	void *start = alloc_frames(mp, pages);
 
 	if (start == NULL)
 		return 1;
 
+	heap->mmcp = mp;
 	heap->heap_name = name;
 	heap->start = (addr_t) start;
 	heap->end = heap->start + size;
@@ -37,7 +38,7 @@ int init_heap(heap_desc_t * heap, const char *name, size_t size)
 
 void init_kheap()
 {
-	if (init_heap(&kheap, "kernel_heap", K_HEAP_SIZE))
+	if (init_heap(&kheap, &mm_phys, "kernel_heap", K_HEAP_SIZE))
 		PANIC("Kernel heap not set up");
 }
 
@@ -62,7 +63,7 @@ static int HEAP_FB(heap_desc_t * heap)
 	heap_block_t *p, *metap;
 
 	// get a free page and initialize free list and reserved list
-	metap = (heap_block_t *) get_zeroed_page_high();
+	metap = (heap_block_t *) alloc_frame(heap->mmcp);
 
 	if (!metap)
 		return 1;
@@ -127,9 +128,10 @@ static void *__kmalloc(size_t size, heap_desc_t * heap)
 	if (hbp == NULL) {
 		// well, we do not have space for new entries, allocate
 		// another page.
-		metap = (heap_block_t *) get_zeroed_page_high();
+		metap = (heap_block_t *) alloc_frame(heap->mmcp);
 		if (!metap)
 			return NULL;
+		bzero(metap, PAGE_SIZE);
 
 		// initialize 'avail' list
 		for (p = metap; (addr_t) p < (addr_t) metap + PAGE_SIZE; p++)
@@ -147,8 +149,10 @@ static void *__kmalloc(size_t size, heap_desc_t * heap)
 	found->base += size;
 	list_move(&hbp->lh, &hd_res->lh);
 
-	printk("\n<__kmalloc: 0x%08X> \n", size);
-	show_heap(heap);
+	if (KLOG_DBG) {
+		printk("\n<__kmalloc: 0x%08X> \n", size);
+		show_heap(heap);
+	}
 
 	return (void *)(hbp->base);
 }
@@ -197,8 +201,10 @@ static int __kfree(void *p, heap_desc_t * heap)
 
 	// TODO check if page-release is needed
 
-	printk("\n<__kfree: 0x%08X> \n", (addr_t) p);
-	show_heap(heap);
+	if (KLOG_DBG) {
+		printk("\n<__kfree: 0x%08X> \n", (addr_t) p);
+		show_heap(heap);
+	}
 
 	return 0;
 }

@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "heap.h"
 #include "paging.h"
+#include "sched.h"
 
 multiboot_t *mbootp;
 
@@ -32,20 +33,15 @@ int main(multiboot_t * mbp)
 	// interrupt on
 	asm volatile ("sti");
 
-	// show memory map ready for paging
+	// memory management
 	show_kernel_pos();
 	show_ARDS_from_multiboot(mbp);
 	init_paging();
 	init_kheap();
 
-	void *p = kmalloc(4100);
-	void *a = kmalloc(120);
-	void *b = kmalloc(sizeof(mmc_t));
-	kfree(a);
-	//print_cur_status();
-	//print_stack_trace();  
-	//init_timer(10000000);
-	//asm volatile ("int $0xe");
+	// initialize kernel task and scheduling
+	setup_init_task();
+	init_sched();
 
 	// All our initialisation calls will go in here.
 	return 0xDEADBABA;

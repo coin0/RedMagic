@@ -32,6 +32,7 @@ typedef struct {
 
 typedef struct {
 	const char *heap_name;
+	mmc_t *mmcp;
 	addr_t start;
 	addr_t end;
 
@@ -44,7 +45,7 @@ typedef struct {
 } __attribute__ ((packed)) heap_desc_t;
 
 // init heap
-int init_heap(heap_desc_t * heap, const char *name, size_t size);
+int init_heap(heap_desc_t * heap, mmc_t * mp, const char *name, size_t size);
 
 // init kernel heap
 void init_kheap();

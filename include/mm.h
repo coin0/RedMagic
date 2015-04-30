@@ -33,7 +33,9 @@ typedef struct {
 } __attribute__ ((packed)) mmc_t;
 
 extern int INIT_MM(mmc_t * mmcp, void *base, _u32 length);
+extern void copy_mm_from(mmc_t * mmcp, void *src, void *dst);
 void *alloc_frames(mmc_t * mmcp, _u32 npages);
+void *alloc_frame(mmc_t * mmcp);
 int free_frames(mmc_t * mmcp, void *mp);
 
 #define ARDS_TYPE_AVAIL 1
@@ -69,21 +71,22 @@ extern void show_kernel_pos();
 extern void show_ARDS_from_multiboot(multiboot_t * mbp);
 
 // operations on mm_phys
+extern mmc_t mm_phys;
 extern void *get_free_pages(size_t npg);
 extern void *get_free_page();
 extern void *get_zeroed_page();
 extern int free_pages(void *page);
 extern int free_page(void *page);
 
-// operations on mm_high
+// operations on high memory
 extern void *get_free_pages_high(size_t npg);
 extern void *get_free_page_high();
 extern void *get_zeroed_page_high();
 extern int free_pages_high(void *page);
 extern int free_page_high(void *page);
 extern addr_t get_high_mem_start();
+extern inline size_t get_high_mem_len();
 
-extern void init_paging();
 extern void get_mem_info_from_multiboot(multiboot_t * mbp, mem_info_t * minfo);
 
 // PAGE_TABLE

@@ -10,9 +10,9 @@
 |        |
 |yyyyyyyy|  kheap end
 |        |
-|xxxxxxxx|  high memory start(mm_high), kheap
+|xxxxxxxx|  high memory start
 |        |
-|01000000|  K_SPACE_END, Physical mem map(mm_phys)
+|01000000|  K_SPACE_END, Physical mem map(mm_phys,kheap)
 |        |
 |00100000|  Kernel entry
 |        |
@@ -73,19 +73,20 @@ typedef struct {
       Array of pointers to the pagetables above, but gives their *physical*
       location, for loading into the CR3 register.
    **/
-	_u32 table_phy_addr[1024];
+	//_u32 table_phy_addr[1024];
    /**
       The physical address of tablesPhysical. This comes into play
       when we get our kernel heap allocated and the directory
       may be in a different location in virtual memory.
    **/
-	_u32 phy_addr;
+	//_u32 phy_addr;
 } __attribute__ ((packed)) page_directory_t;
 
-/**
-  Handler for page faults.
-**/
+extern page_directory_t *k_pdir;
+extern void init_paging();
+
 extern void switch_page_directory(page_directory_t * dir);
+extern void copy_page_directory_from(void *src, void *dst);
 
 // map virtual address to physical address and unmap virtual address
 extern int page_map(void *virt_addr, void *phys_addr, page_directory_t * pdir,

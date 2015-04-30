@@ -16,6 +16,11 @@ typedef _u32 uint_t;
 // platform irrelevant
 typedef uint_t addr_t;
 
+typedef struct {
+	addr_t base;
+	size_t length;
+} addr_vec_t;
+
 #define NULL ((void *)0)
 #define OK 0
 

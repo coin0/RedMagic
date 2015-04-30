@@ -89,7 +89,7 @@ static int __page_unmap(void *virt_addr, page_directory_t * pdir, int flush);
 // this mmc will manage use of frames for actual physical memory, we can get
 // physical memory usage and frame contents via series of interfaces.
 // mm_phys should be initialized before paging is switched on.
-static mmc_t mm_phys;
+mmc_t mm_phys;
 
 void *get_free_pages(size_t npg)
 {
@@ -98,14 +98,14 @@ void *get_free_pages(size_t npg)
 
 void *get_free_page()
 {
-	return alloc_frames(&mm_phys, 1);
+	return alloc_frame(&mm_phys);
 }
 
 void *get_zeroed_page()
 {
 	void *p;
 
-	p = alloc_frames(&mm_phys, 1);
+	p = alloc_frame(&mm_phys);
 	if (p)
 		bzero(p, PAGE_SIZE);
 	return p;
@@ -124,23 +124,24 @@ int free_page(void *page)
 
 // this mmc is for high memroy management, high memory is not mapped in page
 // tables, so we should setup a few pages for mm meta data first.
-static mmc_t mm_high;
+static mmc_t *mmp_high;
+static addr_vec_t high_mem;
 
 void *get_free_pages_high(size_t npg)
 {
-	return alloc_frames(&mm_high, npg);
+	return alloc_frames(mmp_high, npg);
 }
 
 void *get_free_page_high()
 {
-	return alloc_frames(&mm_high, 1);
+	return alloc_frame(mmp_high);
 }
 
 void *get_zeroed_page_high()
 {
 	void *p;
 
-	p = alloc_frames(&mm_high, 1);
+	p = alloc_frame(mmp_high);
 	if (p)
 		bzero(p, PAGE_SIZE);
 	return p;
@@ -148,7 +149,7 @@ void *get_zeroed_page_high()
 
 int free_pages_high(void *page)
 {
-	return free_frames(&mm_high, page);
+	return free_frames(mmp_high, page);
 }
 
 // TODO can just allocate one page
@@ -157,22 +158,34 @@ int free_page_high(void *page)
 	return 0;
 }
 
+static inline void set_high_mem(addr_t addr, size_t len)
+{
+	high_mem.base = addr;
+	high_mem.length = len;
+}
+
 inline addr_t get_high_mem_start()
 {
-	return (addr_t) mm_high.base;
+	return high_mem.base;
+}
+
+inline size_t get_high_mem_len()
+{
+	return high_mem.length;
 }
 
 // notice this is inline function inside init_paging, make sure it is called
 // AFTER paging takes effect
-static inline int init_high_mem(addr_t hm_start, addr_t hm_end)
+static inline int init_high_mem()
 {
-	return INIT_MM(&mm_high, (void *)hm_start, hm_end - hm_start);
+	return INIT_MM(mmp_high, (void *)get_high_mem_start(),
+		       get_high_mem_len());
 }
 
 // page directories begin from 0x00
 // page tables follow up with the end of page directories
 // refer to detailed mapping chart in paging.h
-static page_directory_t *k_pdir;
+page_directory_t *k_pdir;
 void init_paging()
 {
 	_u32 i, pgtbls_end = 0;
@@ -220,7 +233,7 @@ void init_paging()
 	k_pdir = &pdp[PGD_IDX_KERNEL];
 	p = (void *)(K_SPACE_START & PAGE_MASK);
 	while ((_u32) p < PAGE_ALIGN(K_SPACE_END)) {
-		ptp = (page_table_t *) alloc_frames(&mm_pgtbls, 1);
+		ptp = (page_table_t *) alloc_frame(&mm_pgtbls);
 		if (ptp == NULL)
 			PANIC("No free frames");
 
@@ -275,14 +288,13 @@ void init_paging()
 	if (INIT_MM(&mm_phys, _va, va - _va))
 		PANIC("Physical memory init failed");
 
+	// set address range of high memory
+	log_info("set high memory ...\n");
+	set_high_mem((_u32) mm_phys.base + mm_phys.length, K_HMEM_END);
+
 	// register page fault handler and enable paging
 	register_interrupt_handler(14, &page_fault_handler);
 	switch_page_directory(&pdp[PGD_IDX_KERNEL]);
-
-	// init high memory AFTER paging is set
-	log_info("init high memory ...\n");
-	if (init_high_mem((_u32) mm_phys.base + mm_phys.length, K_HMEM_END))
-		PANIC("High memory init failed");
 }
 
 int page_map(void *virt_addr, void *phys_addr, page_directory_t * pdir,
@@ -303,7 +315,7 @@ static int __page_map(void *virt_addr, void *phys_addr, page_directory_t * pdir,
 	page_table_t **pdep = &pdir->tables[PDE_INDEX(virt_addr)];
 
 	if (*pdep == NULL) {
-		ptp = (page_table_t *) alloc_frames(mp, 1);
+		ptp = (page_table_t *) alloc_frame(mp);
 		bzero(ptp, PAGE_SIZE);
 		*pdep =
 		    (page_table_t *) ((_u32) ptp | PAGE_PRESENT | PAGE_WRITE |
@@ -345,7 +357,9 @@ static void page_fault_handler(registers_t * regs)
 	sprintf(msg, "*** PAGE FAULT @0x%08X, e=0x%08X", cr2, regs->err_code);
 	log_dbg("\n%s\n", msg);
 
-	// alloc free pages for mm_high meta
+	ASSERT(cr2 < get_high_mem_start());
+
+	// alloc free pages for mmp_high meta
 	// if (is_kernel && state_hm_init){
 	freep = get_free_page();
 
@@ -366,6 +380,16 @@ void switch_page_directory(page_directory_t * dir)
 	asm volatile ("mov %%cr0, %0":"=r" (cr0));
 	cr0 |= 0x80000000;
 	asm volatile ("mov %0, %%cr0"::"r" (cr0));
+}
+
+// copy pg dir from src to dst, notice that both src and dst will be
+// aligned in page.
+void copy_page_directory_from(void *src, void *dst)
+{
+	void *a_src = (void *)((addr_t) src & PAGE_MASK);
+	void *a_dst = (void *)((addr_t) dst & PAGE_MASK);
+
+	memcpy(a_dst, a_src, PAGE_SIZE);
 }
 
 #if INIT_MM == MM_PAGE_TABLE
@@ -426,6 +450,10 @@ int MM_PAGE_TABLE(mmc_t * mmcp, void *base, _u32 length)
 	print_memory((void *)meta + meta_len - META_ENT_SIZE * 8, 2);
 
 	return 0;
+}
+
+void copy_mm_from(mmc_t * mmcp, void *src, void *dst)
+{
 }
 
 static _u32 *find_seq_pages(mmc_t * mmcp, _u32 npages)
@@ -513,6 +541,11 @@ void *alloc_frames(mmc_t * mmcp, _u32 npages)
 	if (KLOG_DBG)
 		print_memory((void *)mmcp->meta_base, 2);
 	return (void *)(PAGE_MASK & (*tp));
+}
+
+void *alloc_frame(mmc_t * mmcp)
+{
+	return alloc_frames(mmcp, 1);
 }
 
 int free_frames(mmc_t * mmcp, void *mp)
