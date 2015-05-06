@@ -149,6 +149,7 @@ void *get_zeroed_page_high()
 
 int free_pages_high(void *page)
 {
+	// TODO need to free __phys_page in mm_phys accordingly
 	return free_frames(mmp_high, page);
 }
 

@@ -62,3 +62,26 @@ document show_task_thr
 	usage: show_task_thr <task_t *>
 end
 
+
+define show_rq
+	if $argc != 1
+		help show_rq
+	else
+		set print pretty on
+		set $cpu = (cpu_state_t *)$arg0
+
+		set $cur = $cpu->runq
+		while ((unsigned int)&($cpu->runq) != (unsigned int)($cur.next))
+			set $cur = $cur.next
+			set $thread_list = (unsigned int)$cur - (unsigned int)&(((rthread_list_t *)0)->runq)
+			print *(rthread_list_t *)$thread_list
+			printf "-----\n"
+			set $cur = ((rthread_list_t *)$thread_list)->runq
+		end
+	end
+end
+
+document show_rq
+	help print run-queue of specified cpu
+	usage: show_rq <cpu_state_t *>
+end

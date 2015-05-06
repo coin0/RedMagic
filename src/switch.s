@@ -29,3 +29,22 @@ switch_to:
 
 	ret
 
+[global switch_to_init]
+
+;; as for the initial thread, we only want to switch current PC to 
+;; another function and deprecate all old registers.
+switch_to_init:
+	;; argument is in EAX
+	mov eax, [esp + 4]
+
+	mov esp, [eax + 0]
+        mov ebp, [eax + 4]
+        mov ebx, [eax + 8]
+        mov esi, [eax + 12]
+        mov edi, [eax + 16]
+        mov eax, [eax + 20]
+        push eax
+        popf
+
+        ret
+

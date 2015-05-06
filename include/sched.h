@@ -5,29 +5,51 @@
 #include "task.h"
 #include "list.h"
 
-typedef struct {
-	thread_t *thread;
-	list_head_t list;
-} thread_list_t;
+// frequency of scheduling interrupts
+#define SCHED_HZ 100
+
+typedef enum {
+	SCHED_RR,
+	SCHED_PRIOR,
+
+	// No Move
+	SCHED_LAST
+} scheduler_t;
+
+#define SCHED_DEFAULT SCHED_RR
+
+#include "cpu.h"
 
 typedef struct {
-	list_head_t ready;
-	list_head_t blocked;
-	list_head_t complete;
-	thread_t *rthread;
-} sched_list_t;
+	uint_t slice;
+} sched_rr_t;
 
 typedef struct {
-	sched_list_t taskq;
-} cpu_state_t;
+	uint_t slice;
+	uint_t prior;
+} sched_prior_t;
 
-extern void pick_next_thread(cpu_state_t * cur);
+typedef struct {
+	union {
+		sched_rr_t rr;
+		sched_prior_t pp;
+	};
+	thread_t *threadp;
+	list_head_t runq;	// to cpu_state_t.runq
+} rthread_list_t;
 
+// add newly created task and thread to cpu run queue
+int add_task_to_rq(task_t * tskp);
+int add_thread_to_rq(thread_t * thrp);
+
+// get current running task
+extern task_t *get_curr_task();
+
+// OS starts scheduling
 extern void init_sched();
 
-extern void set_thread(thread_state_t state);
 extern void switch_to(thread_context_t * prev, thread_context_t * next);
+extern void switch_to_init(thread_context_t * next);
 extern void schedule();
 
-extern task_t *get_curr_task();
 #endif

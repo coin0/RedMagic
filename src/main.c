@@ -10,6 +10,7 @@
 #include "heap.h"
 #include "paging.h"
 #include "sched.h"
+#include "cpu.h"
 
 multiboot_t *mbootp;
 
@@ -40,6 +41,7 @@ int main(multiboot_t * mbp)
 	init_kheap();
 
 	// initialize kernel task and scheduling
+	init_processor();
 	setup_init_task();
 	init_sched();
 

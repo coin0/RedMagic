@@ -15,13 +15,12 @@ static void init_task_group(task_group_t * task_group);
 static void add_to_task_group(task_group_t * task_group, task_t * task);
 
 // internel functions for creating tasks and threads
-static task_id_t __create_task(task_group_t * task_group,
-			       task_id_t task_id, mmc_t * mm,
-			       page_directory_t * addr_space, task_t * parent,
-			       thread_id_t thread_id, int (*fn) (void *),
-			       void *arg);
-static thread_id_t __create_thread(task_t * task, int (*fn) (void *),
-				   void *arg);
+static task_t *__create_task(task_group_t * task_group,
+			     task_id_t task_id, mmc_t * mm,
+			     page_directory_t * addr_space, task_t * parent,
+			     thread_id_t thread_id, int (*fn) (void *),
+			     void *arg);
+static thread_t *__create_thread(task_t * task, int (*fn) (void *), void *arg);
 
 // thread exits here also checks if task should be cleaned up
 static void __finish_thread();
@@ -56,19 +55,31 @@ static void add_to_task_group(task_group_t * task_group, task_t * task)
 
 task_id_t create_task(int (*fn) (void *), void *arg)
 {
-	return __create_task(&all_tasks, 0, NULL, NULL, NULL, 0, fn, arg);
+	task_t *taskp;
+
+	taskp = __create_task(&all_tasks, 0, NULL, NULL, NULL, 0, fn, arg);
+	if (add_task_to_rq(taskp))
+		log_err("could not add to rq\n");
+
+	return taskp->task_id;
 }
 
 task_id_t create_kernel_task(int (*fn) (void *), void *arg)
 {
-	return __create_task(&all_tasks, 0, &mm_phys, NULL, NULL, 0, fn, arg);
+	task_t *taskp;
+
+	taskp = __create_task(&all_tasks, 0, &mm_phys, NULL, NULL, 0, fn, arg);
+	if (add_task_to_rq(taskp))
+		log_err("could not add to rq\n");
+
+	return taskp->task_id;
 }
 
-static task_id_t __create_task(task_group_t * task_group,
-			       task_id_t task_id, mmc_t * mm,
-			       page_directory_t * addr_space, task_t * parent,
-			       thread_id_t thread_id, int (*fn) (void *),
-			       void *arg)
+static task_t *__create_task(task_group_t * task_group,
+			     task_id_t task_id, mmc_t * mm,
+			     page_directory_t * addr_space, task_t * parent,
+			     thread_id_t thread_id, int (*fn) (void *),
+			     void *arg)
 {
 	task_t *taskp;
 	mmc_t *mmcp;
@@ -134,20 +145,28 @@ static task_id_t __create_task(task_group_t * task_group,
 	// + add to task group
 	add_to_task_group(task_group, taskp);
 
-	return taskp->task_id;
+	return taskp;
 
       c_err:
 
 	// this 0 stands for failure
-	return 0;
+	return NULL;
 }
 
 thread_id_t create_thread(int (*fn) (void *), void *arg)
 {
-	return 0;
+	task_t *taskp;
+	thread_t *thrp;
+
+	taskp = get_curr_task();
+	thrp = __create_thread(taskp, fn, arg);
+	if (add_thread_to_rq(thrp))
+		log_err("could not add thread to rq\n");
+
+	return thrp->thread_id;
 }
 
-static thread_id_t __create_thread(task_t * task, int (*fn) (void *), void *arg)
+static thread_t *__create_thread(task_t * task, int (*fn) (void *), void *arg)
 {
 	thread_t *threadp;
 	void *stackp;
@@ -180,10 +199,13 @@ static thread_id_t __create_thread(task_t * task, int (*fn) (void *), void *arg)
 	// reserve return address in the stack frame
 	top = (addr_t) stackp + T_STACK_SIZE;
 
-	top -= sizeof(addr_t *);
-	*(addr_t *) top = (addr_t) __finish_thread;
+	// this is tricky compared with CALL, RET will pick 'fn' as the return
+	// addr, and the new thread 'fn' will treat 'arg' as its void* param 
+	// and __finish_thread as its return address
 	top -= sizeof(addr_t *);
 	*(addr_t *) top = (addr_t) arg;
+	top -= sizeof(addr_t *);
+	*(addr_t *) top = (addr_t) __finish_thread;
 	top -= sizeof(addr_t *);
 	*(addr_t *) top = (addr_t) fn;
 
@@ -196,11 +218,12 @@ static thread_id_t __create_thread(task_t * task, int (*fn) (void *), void *arg)
 
 	// add this thread to task
 	list_add_tail(&threadp->thread_list, &task->thread_list);
+	threadp->task = task;
 
-	return threadp->thread_id;
+	return threadp;
 
       thr_err:
-	return 0;
+	return NULL;
 }
 
 static task_id_t alloc_task_id(task_group_t * tgrp)
@@ -220,4 +243,5 @@ static int verify_task_id(task_group_t * tgrp, task_id_t tid)
 static void __finish_thread()
 {
 	printk("Finished \n");
+	while (1) ;
 }

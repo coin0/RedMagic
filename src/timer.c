@@ -5,13 +5,21 @@
 #include "timer.h"
 #include "isr.h"
 #include "print.h"
+#include "sched.h"
+#include "klog.h"
 
-static _u32 tick = 0;
+static _u32 ticks = 0;
+
+#define _HZ_DIV(hz) (((hz) >= CLOCK_INT_HZ) ? 1 : CLOCK_INT_HZ / (hz))
+#define IF_HZ_EQ(hz) if (!(ticks % _HZ_DIV(hz)))
 
 static void timer_callback(registers_t * regs)
 {
-	tick++;
-	printk("Tick: %d\n", tick);
+	ticks++;
+
+	IF_HZ_EQ(SCHED_HZ) {
+		schedule();
+	}
 }
 
 void init_timer(_u32 frequency)
@@ -22,7 +30,7 @@ void init_timer(_u32 frequency)
 	// The value we send to the PIT is the value to divide it's input clock
 	// (1193180 Hz) by, to get our required frequency. Important to note is
 	// that the divisor must be small enough to fit into 16-bits.
-	_u32 divisor = 1193180 / frequency;
+	_u32 divisor = CLOCK_TICK_RATE / frequency;
 
 	// Send the command byte.
 	outb(0x43, 0x36);

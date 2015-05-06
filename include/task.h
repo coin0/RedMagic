@@ -38,18 +38,6 @@ typedef struct {
 
 #endif
 
-// comments:
-typedef struct thread {
-	thread_id_t thread_id;
-	thread_state_t status;
-	thread_context_t context;
-	addr_t ustack_base;
-	size_t ustack_size;
-	addr_t kstack_base;
-	size_t kstack_size;
-	list_head_t thread_list;
-} __attribute__ ((packed)) thread_t;
-
 typedef struct task {
 	task_id_t task_id;
 	task_state_t status;
@@ -59,6 +47,18 @@ typedef struct task {
 	list_head_t thread_list;
 	list_head_t task_list;
 } __attribute__ ((packed)) task_t;
+
+typedef struct thread {
+	thread_id_t thread_id;
+	thread_state_t status;
+	thread_context_t context;
+	addr_t ustack_base;
+	size_t ustack_size;
+	addr_t kstack_base;
+	size_t kstack_size;
+	task_t *task;
+	list_head_t thread_list;
+} __attribute__ ((packed)) thread_t;
 
 typedef struct {
 	tgroup_id_t group_id;
