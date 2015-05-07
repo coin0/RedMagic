@@ -8,8 +8,8 @@
 
 #include "type.h"
 
-void outb(_u16 port, _u8 value);
-_u8 inb(_u16 port);
-_u16 inw(_u16 port);
+#ifdef ARCH_X86_32
+#include "x86.h"
+#endif
 
 #endif
