@@ -3,6 +3,10 @@
 
 #include "type.h"
 
+// declarations of x86.s
+extern uint_t local_get_flags();
+extern void local_set_flags(uint_t flags);
+
 // write sequential memory bytes to the specified port
 static inline void outsl(int port, const void *addr, int cnt)
 {

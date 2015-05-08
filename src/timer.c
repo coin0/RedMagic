@@ -3,10 +3,11 @@
 
 #include "common.h"
 #include "timer.h"
-#include "isr.h"
+#include "interrupt.h"
 #include "print.h"
 #include "sched.h"
 #include "klog.h"
+#include "cpu.h"
 
 static _u32 ticks = 0;
 
@@ -15,10 +16,14 @@ static _u32 ticks = 0;
 
 static void timer_callback(registers_t * regs)
 {
+	cpu_state_t *cpu;
+
 	ticks++;
 
 	IF_HZ_EQ(SCHED_HZ) {
-		schedule();
+		cpu = get_processor();
+		if (cpu->preempt_on)
+			schedule();
 	}
 }
 

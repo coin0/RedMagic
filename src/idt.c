@@ -1,8 +1,8 @@
 #include "common.h"
 #include "string.h"
 #include "print.h"
-#include "idt.h"
-#include "isr.h"
+#include "interrupt.h"
+#include "cpu.h"
 
 static void init_idt();
 static void init_cpu_isr();
@@ -144,4 +144,30 @@ void irq_handler(registers_t * regs)
 void register_interrupt_handler(_u8 n, isr_t handler)
 {
 	interrupt_handlers[n] = handler;
+}
+
+void local_irq_disable()
+{
+	asm volatile ("cli");
+}
+
+void local_irq_enable()
+{
+	asm volatile ("sti");
+}
+
+void local_irq_save()
+{
+	cpu_state_t *cpu;
+
+	cpu = get_processor();
+	cpu->saved_flags = local_get_flags();
+}
+
+void local_irq_restore()
+{
+	cpu_state_t *cpu;
+
+	cpu = get_processor();
+	local_set_flags(cpu->saved_flags);
 }

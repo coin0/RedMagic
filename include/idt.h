@@ -1,6 +1,10 @@
 #ifndef IDT_H
 #define IDT_H
 
+#ifndef INTERRUPT_H
+#error "Include interrupt.h instead"
+#endif
+
 #include "common.h"
 
 // A struct describing an interrupt gate.
@@ -23,6 +27,10 @@ typedef struct idt_ptr_struct idt_ptr_t;
 
 extern void idt_flush(_u32);
 extern void init_interrupt_descriptor_table();
+extern void local_irq_disable();
+extern void local_irq_enable();
+extern void local_irq_save();
+extern void local_irq_restore();
 
 // These extern directives let us access the addresses of our ASM ISR handlers.
 extern void isr0();

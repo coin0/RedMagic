@@ -44,6 +44,7 @@ int add_thread_to_rq(thread_t * thrp);
 
 // get current running task
 extern task_t *get_curr_task();
+extern thread_t *get_curr_thread();
 
 // OS starts scheduling
 extern void init_sched();

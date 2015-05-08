@@ -1,9 +1,11 @@
 #include "debug.h"
 #include "print.h"
+#include "system.h"
 
 void panic(const char *msg, const char *file, _u32 line)
 {
-	asm volatile ("cli");	// Disable interrupts.
+	// disable interrupt
+	local_irq_disable();
 
 	// TODO panic handler
 

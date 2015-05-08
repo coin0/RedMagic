@@ -2,8 +2,7 @@
 #define SYSTEM_H
 
 #include "gdt.h"
-#include "idt.h"
-#include "isr.h"
+#include "interrupt.h"
 #include "multiboot.h"
 #include "boot.h"
 

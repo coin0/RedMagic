@@ -2,7 +2,7 @@
 #define PAGING_H
 
 #include "common.h"
-#include "isr.h"
+#include "interrupt.h"
 #include "mm.h"
 
 /*

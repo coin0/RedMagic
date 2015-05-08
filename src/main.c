@@ -32,7 +32,7 @@ int main(multiboot_t * mbp)
 	init_interrupt_descriptor_table();
 
 	// interrupt on
-	asm volatile ("sti");
+	local_irq_enable();
 
 	// memory management
 	show_kernel_pos();

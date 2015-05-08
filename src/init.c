@@ -2,9 +2,12 @@
 #include "task.h"
 #include "print.h"
 #include "timer.h"
+#include "locking.h"
 
 int v1(void *args);
 int v2(void *args);
+
+spinlock_t glock;
 
 int K_INIT(void *args)
 {
@@ -13,6 +16,8 @@ int K_INIT(void *args)
 
 	//init_timer(CLOCK_INT_HZ);
 	printk_color(rc_black, rc_blue, "\n Init Task is now running !\n");
+
+	spin_lock_init(&glock);
 
 	create_thread(v1, NULL);
 	create_thread(v2, NULL);

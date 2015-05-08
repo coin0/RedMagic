@@ -137,3 +137,11 @@ task_t *get_curr_task()
 	cpu = get_processor();
 	return cpu->rthread->task;
 }
+
+thread_t *get_curr_thread()
+{
+	cpu_state_t *cpu;
+
+	cpu = get_processor();
+	return cpu->rthread;
+}

@@ -1,9 +1,8 @@
 // Simple PIO-based (non-DMA) IDE driver code.
 
 #include "common.h"
-#include "isr.h"
-#include "idt.h"
 #include "debug.h"
+#include "interrupt.h"
 #include "ide.h"
 
 #define IDE_BSY       0x80

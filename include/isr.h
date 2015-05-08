@@ -7,6 +7,10 @@
 #ifndef ISR_H
 #define ISR_H
 
+#ifndef INTERRUPT_H
+#error "Include interrupt.h instead"
+#endif
+
 #include "common.h"
 
 typedef struct registers {
