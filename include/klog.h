@@ -33,4 +33,22 @@ typedef enum {
 #define log_dbg      if ( KLOG_DBG ) \
                                 printk
 
+/*
+ *  components
+ */
+
+#define LOG_BOOT	"Boot    :"
+#define LOG_SYS		"System  :"
+#define LOG_INT		"INT	 :"
+#define LOG_MM		"MemMgmt :"
+#define LOG_PAGING	"Paging  :"
+#define LOG_HEAP	"Heap	 :"
+#define LOG_CPU		"CPU	 :"
+#define LOG_TASK	"Task	 :"
+#define LOG_THREAD	"Thread  :"
+#define LOG_SCHED	"Sched	 :"
+#define LOG_SPINLOCK	"SpinLk  :"
+#define LOG_MUTEX	"Mutex   :"
+#define LOG_SEM		"Sem	 :"
+
 #endif

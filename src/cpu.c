@@ -65,5 +65,6 @@ static void add_processor(cpu_state_t * cpu, cpu_set_t * set)
 static void reset_cpu_state(cpu_state_t * cpu)
 {
 	INIT_LIST_HEAD(&cpu->runq);
+	spin_lock_init(&cpu->rq_lock);
 	preempt_enable();
 }

@@ -39,8 +39,8 @@ typedef struct {
 } rthread_list_t;
 
 // add newly created task and thread to cpu run queue
-int add_task_to_rq(task_t * tskp);
-int add_thread_to_rq(thread_t * thrp);
+int init_task_sched(task_t * taskp);
+int init_thread_sched(thread_t * threadp);
 
 // get current running task
 extern task_t *get_curr_task();
@@ -52,5 +52,9 @@ extern void init_sched();
 extern void switch_to(thread_context_t * prev, thread_context_t * next);
 extern void switch_to_init(thread_context_t * next);
 extern void schedule();
+
+extern int make_sleep();
+extern int make_sleep_resched();
+extern int wake_up(thread_t * threadp);
 
 #endif

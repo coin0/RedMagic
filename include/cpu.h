@@ -5,6 +5,7 @@
 #include "list.h"
 #include "task.h"
 #include "sched.h"
+#include "locking.h"
 
 typedef struct {
 	char *proc_id;
@@ -12,6 +13,7 @@ typedef struct {
 	uint_t saved_flags;
 	list_head_t runq;
 	thread_t *rthread;
+	spinlock_t rq_lock;
 	scheduler_t scheduler;
 	list_head_t cpu_list;
 } cpu_state_t;

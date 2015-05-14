@@ -48,11 +48,11 @@ void spin_lock_irqsave(spinlock_t * lock)
 	spin_acquire(lock);
 }
 
-void spin_unlock_irqsave(spinlock_t * lock)
+void spin_unlock_irqrestore(spinlock_t * lock)
 {
 	spin_release(lock);
+	local_irq_restore();
 	preempt_enable();
-	local_irq_enable();
 }
 
 static inline void spin_acquire(spinlock_t * lock)

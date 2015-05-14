@@ -6,7 +6,7 @@
 #include "task.h"
 #include "sched.h"
 #include "list.h"
-#include "debug.h"
+#include "klog.h"
 #include "heap.h"
 #include "print.h"
 
@@ -15,15 +15,44 @@ static thread_t *__do_sched(cpu_state_t * cur);
 static thread_t *__do_sched_rr(cpu_state_t * cur);
 static thread_t *__do_sched_pior(cpu_state_t * cur);
 
+static int add_task_to_rq(task_t * taskp);
+static int add_thread_to_rq(thread_t * threadp);
+static void *find_thread_in_rq(thread_t * threadp, list_head_t * q);
+
+#define __set_thread_status(threadp, state) 		\
+	do {  						\
+		(threadp)->status = (state);		\
+	}while(0);
+
+#define __set_task_status(taskp, state)			\
+	do {						\
+		(taskp)->status = (state);		\
+	}while(0);
+
+static inline void set_thread_status(thread_state_t status);
+static inline void set_task_status(task_state_t status);
+
+/*
+ *  core function to pick thread to run, it gets called 
+ *  under following 3 cases
+ *
+ *  1. PIT interrupt
+ *  2. explicitly call this function
+ *  3. when a thread is going to sleep
+ */
 void schedule()
 {
 	cpu_state_t *cpu;
 	thread_t *rthread, *nextp;
 
+	preempt_disable();
+
 	cpu = get_processor();
 	nextp = pick_next_thread(cpu);
 	rthread = cpu->rthread;
 	cpu->rthread = nextp;
+
+	// will re-enable preemption in switch_to
 	switch_to(&rthread->context, &nextp->context);
 }
 
@@ -54,25 +83,24 @@ static thread_t *__do_sched(cpu_state_t * cur)
 static thread_t *__do_sched_rr(cpu_state_t * cur)
 {
 	rthread_list_t *tlist;
-	unsigned int found = 0;
 
 	if (list_empty(&cur->runq))
 		PANIC("CPU is idle");
 
-	list_for_each_entry(tlist, &cur->runq, runq) {
-		if (tlist->threadp == cur->rthread) {
-			found = 1;
-			break;
-		}
-	}
+	tlist = find_thread_in_rq(cur->rthread, &cur->runq);
+	if (tlist == NULL)
+		PANIC("Running thread is not in RQ");
 
-	// what?! current running thread is not in rq?
-	ASSERT(found);
+	// if we do not have any thread in T_READY, let's fall into an
+	// infinite loop till a thread is waked up.
+	do {
+		if (list_is_last(&tlist->runq, &cur->runq))
+			tlist =
+			    list_first_entry(&cur->runq, rthread_list_t, runq);
+		else
+			tlist = list_next_entry(tlist, runq);
 
-	if (list_is_last(&tlist->runq, &cur->runq))
-		tlist = list_first_entry(&cur->runq, rthread_list_t, runq);
-	else
-		tlist = list_next_entry(tlist, runq);
+	} while (tlist->threadp->status != T_READY);
 
 	return tlist->threadp;
 }
@@ -98,21 +126,46 @@ void init_sched()
 	switch_to_init(&(cpu->rthread->context));
 }
 
-int add_task_to_rq(task_t * taskp)
+static inline void set_thread_status(thread_state_t status)
+{
+	__set_thread_status(get_curr_thread(), status);
+}
+
+static inline void set_task_status(task_state_t status)
+{
+	__set_task_status(get_curr_task(), status);
+}
+
+int init_task_sched(task_t * taskp)
+{
+	return add_task_to_rq(taskp);
+}
+
+int init_thread_sched(thread_t * threadp)
+{
+	return add_thread_to_rq(threadp);
+}
+
+/*
+ *  following functions, add_* will handle current scheduling queue
+ *  before using them, make sure you are holding cpu->sched_lock 
+ */
+static int add_task_to_rq(task_t * taskp)
 {
 	thread_t *threadp;
 
+	// only support newly created task
 	ASSERT(taskp->status == T_INIT);
 	threadp = list_entry(taskp->thread_list.next, thread_t, thread_list);
 	if (!add_thread_to_rq(threadp)) {
-		taskp->status = T_READY;
+		__set_task_status(taskp, T_READY);
 		return OK;
 	}
 
 	return 1;
 }
 
-int add_thread_to_rq(thread_t * threadp)
+static int add_thread_to_rq(thread_t * threadp)
 {
 	cpu_state_t *cpu;
 	rthread_list_t *ptr;
@@ -123,25 +176,59 @@ int add_thread_to_rq(thread_t * threadp)
 
 	cpu = get_processor();
 	ptr->threadp = threadp;
+	spin_lock_irqsave(&cpu->rq_lock);
 	list_add_tail(&ptr->runq, &cpu->runq);
-
-	threadp->status = T_READY;
+	spin_unlock_irqrestore(&cpu->rq_lock);
+	__set_thread_status(threadp, T_READY);
 
 	return OK;
 }
 
+static void *find_thread_in_rq(thread_t * threadp, list_head_t * q)
+{
+	rthread_list_t *tmp;
+
+	list_for_each_entry(tmp, q, runq) {
+		if (tmp->threadp == threadp) {
+			return tmp;
+		}
+	}
+	return NULL;
+}
+
 task_t *get_curr_task()
 {
-	cpu_state_t *cpu;
-
-	cpu = get_processor();
-	return cpu->rthread->task;
+	return get_processor()->rthread->task;
 }
 
 thread_t *get_curr_thread()
 {
-	cpu_state_t *cpu;
+	return get_processor()->rthread;
+}
 
-	cpu = get_processor();
-	return cpu->rthread;
+int make_sleep()
+{
+	set_thread_status(T_BLOCKED);
+
+	return OK;
+}
+
+int make_sleep_resched()
+{
+	make_sleep();
+	schedule();
+
+	return OK;
+}
+
+int wake_up(thread_t * threadp)
+{
+	if (threadp->status == T_BLOCKED) {
+		__set_thread_status(threadp, T_READY);
+		return OK;
+	} else {
+		log_warn(LOG_SCHED "try to wake up non-sleeping thread[0x%08X]",
+			 threadp);
+		return 1;
+	}
 }

@@ -159,9 +159,12 @@ void local_irq_enable()
 void local_irq_save()
 {
 	cpu_state_t *cpu;
+	uint_t flags;
 
 	cpu = get_processor();
-	cpu->saved_flags = local_get_flags();
+	flags = local_get_flags();
+	local_irq_disable();
+	cpu->saved_flags = flags;
 }
 
 void local_irq_restore()

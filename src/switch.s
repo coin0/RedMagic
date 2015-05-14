@@ -1,5 +1,9 @@
 ;; task switching & calling
 
+;; need to enable preemption when RET
+[extern preempt_enable]
+
+
 [global switch_to]
 
 switch_to:
@@ -26,6 +30,8 @@ switch_to:
 	mov eax, [eax + 20]
 	push eax
 	popf			; now restore eflags for new
+
+	call preempt_enable	; caller should be schedule()
 
 	ret
 

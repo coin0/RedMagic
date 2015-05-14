@@ -58,7 +58,7 @@ task_id_t create_task(int (*fn) (void *), void *arg)
 	task_t *taskp;
 
 	taskp = __create_task(&all_tasks, 0, NULL, NULL, NULL, 0, fn, arg);
-	if (add_task_to_rq(taskp))
+	if (init_task_sched(taskp))
 		log_err("could not add to rq\n");
 
 	return taskp->task_id;
@@ -69,7 +69,7 @@ task_id_t create_kernel_task(int (*fn) (void *), void *arg)
 	task_t *taskp;
 
 	taskp = __create_task(&all_tasks, 0, &mm_phys, NULL, NULL, 0, fn, arg);
-	if (add_task_to_rq(taskp))
+	if (init_task_sched(taskp))
 		log_err("could not add to rq\n");
 
 	return taskp->task_id;
@@ -160,7 +160,7 @@ thread_id_t create_thread(int (*fn) (void *), void *arg)
 
 	taskp = get_curr_task();
 	thrp = __create_thread(taskp, fn, arg);
-	if (add_thread_to_rq(thrp))
+	if (init_thread_sched(thrp))
 		log_err("could not add thread to rq\n");
 
 	return thrp->thread_id;

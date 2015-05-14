@@ -2,7 +2,6 @@
 #define LOCKING_H
 
 #include "common.h"
-#include "cpu.h"
 #include "task.h"
 
 typedef struct {
@@ -41,10 +40,9 @@ static inline uint_t release_rlock(rawlock_t * lk)
 /*
  *   Spinlock
  */
-
 typedef struct {
 	rawlock_t slock;
-	cpu_state_t *owner_cpu;
+	void *owner_cpu;
 } spinlock_t;
 
 extern void spin_lock_init(spinlock_t * lock);
@@ -56,7 +54,7 @@ extern void spin_lock_irq(spinlock_t * lock);
 extern void spin_unlock_irq(spinlock_t * lock);
 
 extern void spin_lock_irqsave(spinlock_t * lock);
-extern void spin_unlock_irqsave(spinlock_t * lock);
+extern void spin_unlock_irqrestore(spinlock_t * lock);
 
 /*
  *   Mutexlock
@@ -66,7 +64,7 @@ typedef struct {
 	rawlock_t mlock;
 	const char *name;
 	thread_t *owner;
-	list_head_t *wlist;
+	list_head_t wq;
 	spinlock_t wlock;
 } mutex_t;
 
