@@ -50,5 +50,6 @@ typedef enum {
 #define LOG_SPINLOCK	"SpinLk  :"
 #define LOG_MUTEX	"Mutex   :"
 #define LOG_SEM		"Sem	 :"
+#define LOG_INIT	"Init	 :"
 
 #endif

@@ -9,6 +9,7 @@
 #include "klog.h"
 #include "heap.h"
 #include "print.h"
+#include "timer.h"
 
 static thread_t *pick_next_thread(cpu_state_t * cur);
 static thread_t *__do_sched(cpu_state_t * cur);
@@ -84,6 +85,7 @@ static thread_t *__do_sched_rr(cpu_state_t * cur)
 {
 	rthread_list_t *tlist;
 
+	// PANIC in following cases
 	if (list_empty(&cur->runq))
 		PANIC("CPU is idle");
 
@@ -92,7 +94,12 @@ static thread_t *__do_sched_rr(cpu_state_t * cur)
 		PANIC("Running thread is not in RQ");
 
 	// if we do not have any thread in T_READY, let's fall into an
-	// infinite loop till a thread is waked up.
+	// infinite loop till a thread is waked up, enable interrupt so
+	// that we can receive INT events to wakeup threads, otherwise
+	// probably a dead-lock
+	local_irq_save();
+	local_irq_enable();
+
 	do {
 		if (list_is_last(&tlist->runq, &cur->runq))
 			tlist =
@@ -101,6 +108,8 @@ static thread_t *__do_sched_rr(cpu_state_t * cur)
 			tlist = list_next_entry(tlist, runq);
 
 	} while (tlist->threadp->status != T_READY);
+
+	local_irq_restore();
 
 	return tlist->threadp;
 }
@@ -186,14 +195,15 @@ static int add_thread_to_rq(thread_t * threadp)
 
 static void *find_thread_in_rq(thread_t * threadp, list_head_t * q)
 {
-	rthread_list_t *tmp;
+	rthread_list_t *tmp = NULL;
 
 	list_for_each_entry(tmp, q, runq) {
 		if (tmp->threadp == threadp) {
-			return tmp;
+			break;
 		}
 	}
-	return NULL;
+
+	return tmp;
 }
 
 task_t *get_curr_task()
@@ -230,5 +240,31 @@ int wake_up(thread_t * threadp)
 		log_warn(LOG_SCHED "try to wake up non-sleeping thread[0x%08X]",
 			 threadp);
 		return 1;
+	}
+}
+
+void pause(uint_t sec)
+{
+	thread_t *threadp = get_curr_thread();
+
+	alarm_reset(&threadp->alarm);
+	alarm_set(&threadp->alarm, TICK_SEC * sec);
+	make_sleep_resched();
+}
+
+void check_thread_alarms()
+{
+	cpu_state_t *cpu;
+	rthread_list_t *r;
+	thread_t *thrp;
+
+	cpu = get_processor();
+	list_for_each_entry(r, &cpu->runq, runq) {
+		// TODO for kernel object, need to add magic/chksum mechanism
+		thrp = r->threadp;
+		ASSERT(thrp != NULL);
+		if (thrp->status == T_BLOCKED)
+			if (alarm_check(&thrp->alarm))
+				wake_up(thrp);
 	}
 }

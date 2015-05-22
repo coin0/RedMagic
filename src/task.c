@@ -6,6 +6,7 @@
 #include "list.h"
 #include "klog.h"
 #include "string.h"
+#include "timer.h"
 
 // default task group including all user tasks
 static task_group_t all_tasks;
@@ -215,6 +216,9 @@ static thread_t *__create_thread(task_t * task, int (*fn) (void *), void *arg)
 	// make sure interrupt is switched ON
 	threadp->context.eflags = 0x200;
 #endif
+
+	// reset inner alarm
+	alarm_reset(&threadp->alarm);
 
 	// add this thread to task
 	list_add_tail(&threadp->thread_list, &task->thread_list);

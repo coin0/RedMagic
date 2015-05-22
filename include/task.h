@@ -5,6 +5,7 @@
 #include "mm.h"
 #include "list.h"
 #include "paging.h"
+#include "timer.h"
 
 // stack size for each thread
 #define T_STACK_SIZE 0x1000
@@ -56,6 +57,7 @@ typedef struct thread {
 	size_t ustack_size;
 	addr_t kstack_base;
 	size_t kstack_size;
+	alarm_t alarm;
 	task_t *task;
 	list_head_t thread_list;
 } __attribute__ ((packed)) thread_t;

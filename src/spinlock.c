@@ -5,6 +5,7 @@
 #include "cpu.h"
 #include "debug.h"
 #include "interrupt.h"
+#include "klog.h"
 
 static inline void spin_acquire(spinlock_t * lock);
 static inline void spin_release(spinlock_t * lock);
@@ -19,6 +20,18 @@ void spin_lock(spinlock_t * lock)
 {
 	preempt_disable();
 	spin_acquire(lock);
+}
+
+uint_t spin_trylock(spinlock_t * lock)
+{
+	preempt_disable();
+	if (acquire_rlock(&lock->slock)) {
+		// shit , failed
+		preempt_enable();
+		return 0;
+	}
+	// I got it !!!
+	return 1;
 }
 
 void spin_unlock(spinlock_t * lock)
@@ -60,7 +73,6 @@ static inline void spin_acquire(spinlock_t * lock)
 	while (acquire_rlock(&lock->slock)) ;
 	ASSERT(lock->owner_cpu == NULL);
 	lock->owner_cpu = get_processor();
-
 }
 
 static inline void spin_release(spinlock_t * lock)

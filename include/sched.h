@@ -7,6 +7,7 @@
 
 // frequency of scheduling interrupts
 #define SCHED_HZ 100
+#define CHK_ALM_HZ 10
 
 typedef enum {
 	SCHED_RR,
@@ -56,5 +57,8 @@ extern void schedule();
 extern int make_sleep();
 extern int make_sleep_resched();
 extern int wake_up(thread_t * threadp);
+
+extern void pause(uint_t sec);
+extern void check_thread_alarms();
 
 #endif

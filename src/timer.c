@@ -8,6 +8,7 @@
 #include "sched.h"
 #include "klog.h"
 #include "cpu.h"
+#include "locking.h"
 
 static _u32 ticks = 0;
 
@@ -20,8 +21,14 @@ static void timer_callback(registers_t * regs)
 
 	ticks++;
 
+	cpu = get_processor();
+
+	IF_HZ_EQ(CHK_ALM_HZ) {
+		// check alarms inside blocked threads
+		check_thread_alarms();
+	}
+
 	IF_HZ_EQ(SCHED_HZ) {
-		cpu = get_processor();
 		if (cpu->preempt_on)
 			schedule();
 	}
@@ -47,4 +54,49 @@ void init_timer(_u32 frequency)
 	// Send the frequency divisor.
 	outb(0x40, l);
 	outb(0x40, h);
+}
+
+/**********
+   alarm
+ **********/
+
+void alarm_reset(alarm_t * alarm)
+{
+	alarm->enabled = 0;
+	alarm->up = 0;
+	alarm->start = 0;
+	alarm->duration = 0;
+}
+
+void alarm_set(alarm_t * alarm, uint_t duration)
+{
+	alarm->enabled = 1;
+	alarm->up = 0;
+	alarm->start = ticks;
+	alarm->duration = duration;
+}
+
+void alarm_unset(alarm_t * alarm)
+{
+	alarm->enabled = 0;
+}
+
+void alarm_restart(alarm_t * alarm)
+{
+	alarm_set(alarm, alarm->duration);
+}
+
+uint_t alarm_isset(alarm_t * alarm)
+{
+	return alarm->enabled;
+}
+
+uint_t alarm_check(alarm_t * alarm)
+{
+	uint_t now = ticks;
+
+	if (alarm_isset(alarm))
+		return time_after(now, alarm->start + alarm->duration);
+	else
+		return 0;
 }

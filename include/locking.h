@@ -48,6 +48,7 @@ typedef struct {
 extern void spin_lock_init(spinlock_t * lock);
 
 extern void spin_lock(spinlock_t * lock);
+extern uint_t spin_trylock(spinlock_t * lock);
 extern void spin_unlock(spinlock_t * lock);
 
 extern void spin_lock_irq(spinlock_t * lock);
