@@ -79,6 +79,14 @@ extern void mutex_unlock(mutex_t * lock);
  */
 
 typedef struct {
+	spinlock_t semlock;
+	uint_t count;
+	list_head_t wq;
 } semaphore_t;
+
+void sem_init(semaphore_t * sem, uint_t count);
+
+void sem_down(semaphore_t * sem);
+void sem_up(semaphore_t * sem);
 
 #endif

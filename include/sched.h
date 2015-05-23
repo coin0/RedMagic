@@ -7,7 +7,7 @@
 
 // frequency of scheduling interrupts
 #define SCHED_HZ 100
-#define CHK_ALM_HZ 10
+#define CHK_ALM_HZ 1000
 
 typedef enum {
 	SCHED_RR,

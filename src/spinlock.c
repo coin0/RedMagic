@@ -77,6 +77,6 @@ static inline void spin_acquire(spinlock_t * lock)
 
 static inline void spin_release(spinlock_t * lock)
 {
-	release_rlock(&lock->slock);
 	lock->owner_cpu = NULL;
+	release_rlock(&lock->slock);
 }
