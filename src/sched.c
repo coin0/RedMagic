@@ -264,7 +264,9 @@ void check_thread_alarms()
 		thrp = r->threadp;
 		ASSERT(thrp != NULL);
 		if (thrp->status == T_BLOCKED)
-			if (alarm_check(&thrp->alarm))
+			if (alarm_check(&thrp->alarm)) {
+				alarm_unset(&thrp->alarm);
 				wake_up(thrp);
+			}
 	}
 }
