@@ -51,5 +51,6 @@ typedef enum {
 #define LOG_MUTEX	"Mutex   :"
 #define LOG_SEM		"Sem	 :"
 #define LOG_INIT	"Init	 :"
+#define LOG_MP		"MP	 :"
 
 #endif

@@ -16,6 +16,40 @@ void memset(void *dest, _u8 val, _u32 len)
 	}
 }
 
+int memcmp(const void *v1, const void *v2, size_t n)
+{
+	const uchar_t *s1, *s2;
+
+	s1 = v1;
+	s2 = v2;
+	while (n-- > 0) {
+		if (*s1 != *s2)
+			return *s1 - *s2;
+		s1++, s2++;
+	}
+
+	return 0;
+}
+
+void *memmove(void *dst, const void *src, size_t n)
+{
+	const char *s;
+	char *d;
+
+	s = src;
+	d = dst;
+	if (s < d && s + n > d) {
+		s += n;
+		d += n;
+		while (n-- > 0)
+			*--d = *--s;
+	} else
+		while (n-- > 0)
+			*d++ = *s++;
+
+	return dst;
+}
+
 void bzero(void *dest, _u32 len)
 {
 	memset(dest, 0, len);

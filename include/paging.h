@@ -6,20 +6,21 @@
 #include "mm.h"
 
 /*
-|ffffffff|  4G/32bit
-|        |
-|yyyyyyyy|  kheap end
-|        |
-|xxxxxxxx|  high memory start
-|        |
-|01000000|  K_SPACE_END, Physical mem map(mm_phys,kheap)
-|        |
-|00100000|  Kernel entry
-|        |
-|00001000|  Page Directory(mm_pgtbls)
-|        |
-|00000000|  K_SPACE_START
-|________|
+P             V
+  |ffffffff|  4G/32bit
+  |        |
+  |yyyyyyyy|  kheap end
+  |        |
+  |xxxxxxxx|  high memory start
+D |        |
+i |01000000|  K_SPACE_END, Physical mem map(mm_phys,kheap)
+r |        |
+e |00100000|  Kernel entry
+c |        |
+t |00001000|  Page Directory(mm_pgtbls)
+m |        |
+a |00000000|  K_SPACE_START
+p |________|
 
 */
 
@@ -97,5 +98,9 @@ extern int page_unmap(void *virt_addr, page_directory_t * pdir);
 	_u32 __addr = (_u32)(pdir)->tables[PDE_INDEX(va)] & PAGE_MASK;      \
 	__addr = (_u32)((page_table_t *)__addr)->pages[PTE_INDEX(va)] & PAGE_MASK;\
 	__addr | ((va) & (~PAGE_MASK)); })
+
+// notice: phys_to_virt is not unique, for now, address (<high memory) is
+//         direct mapping
+#define __phys_to_virt_lm(pdir, pa)	(pa)
 
 #endif

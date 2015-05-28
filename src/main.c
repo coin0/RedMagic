@@ -10,6 +10,7 @@
 #include "heap.h"
 #include "paging.h"
 #include "sched.h"
+#include "mp.h"
 #include "cpu.h"
 
 multiboot_t *mbootp;
