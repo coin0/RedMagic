@@ -16,10 +16,6 @@ static int mode = 0;
 
 int K_INIT(void *args)
 {
-	// set system clock rate
-	init_timer(CLOCK_INT_HZ);
-	printk("Kernel clock is set to %d HZ\n", CLOCK_INT_HZ);
-
 	mutex_init(&mlock);
 	sem_init(&ss, 2);
 

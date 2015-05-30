@@ -55,4 +55,11 @@ typedef struct mpioapic {	// I/O APIC table entry
 #define MPIOINTR  0x03		// One per bus interrupt source
 #define MPLINTR   0x04		// One per system interrupt source
 
+typedef struct {
+	int ismp;
+	int ncpu;
+} mp_t;
+
+extern mp_t mpinfo;
+
 #endif

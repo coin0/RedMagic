@@ -84,6 +84,8 @@ static void init_8259A()
 	idt_set_gate(45, (_u32) irq13, 0x08, 0x8E);
 	idt_set_gate(46, (_u32) irq14, 0x08, 0x8E);
 	idt_set_gate(47, (_u32) irq15, 0x08, 0x8E);
+
+	// TODO disable Master/Slave int with masks except Slave IRQ
 }
 
 static void init_idt()
@@ -134,6 +136,9 @@ void irq_handler(registers_t * regs)
 	}
 	// Send reset signal to master. (As well as slave, if necessary).
 	outb(0x20, 0x20);
+
+	// send an EOI to local APIC
+	lapic_eoi();
 
 	if (interrupt_handlers[regs->int_no] != 0) {
 		isr_t handler = interrupt_handlers[regs->int_no];

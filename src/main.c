@@ -10,7 +10,6 @@
 #include "heap.h"
 #include "paging.h"
 #include "sched.h"
-#include "mp.h"
 #include "cpu.h"
 
 multiboot_t *mbootp;
@@ -28,9 +27,13 @@ int main(multiboot_t * mbp)
 	c80_clear();
 	printk_color(rc_black, rc_red, "\t\t\t\tRed Magic\n");
 
+	// init processors
+	init_bootstrap_processor();
+
 	// initialize descriptors
 	init_global_descriptor_table();
 	init_interrupt_descriptor_table();
+	init_io_apic();
 
 	// interrupt on
 	local_irq_enable();
@@ -41,8 +44,16 @@ int main(multiboot_t * mbp)
 	init_paging();
 	init_kheap();
 
+	// set system clock rate
+	if (!mpinfo.ismp) {
+		init_timer(CLOCK_INT_HZ);
+		printk("Kernel clock is set to %d HZ\n", CLOCK_INT_HZ);
+	} else {
+		// APIC timer has been already set in init_lapic
+		init_timer_cb();
+	}
+
 	// initialize kernel task and scheduling
-	init_processor();
 	setup_init_task();
 	init_sched();
 

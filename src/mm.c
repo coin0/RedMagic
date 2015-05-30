@@ -358,8 +358,13 @@ static void page_fault_handler(registers_t * regs)
 	sprintf(msg, "*** PAGE FAULT @0x%08X, e=0x%08X", cr2, regs->err_code);
 	log_dbg("\n%s\n", msg);
 
-	ASSERT(cr2 < get_high_mem_start());
+	ASSERT(cr2 < get_high_mem_start() || cr2 >= 0xfee00000);
 
+	// this is for LAPIC and IO-APIC mapping under x86 paging
+	if (cr2 >= 0xfee00000) {
+		page_map((void *)cr2, (void *)cr2, k_pdir, &mm_pgtbls);
+		return;
+	}
 	// alloc free pages for mmp_high meta
 	// if (is_kernel && state_hm_init){
 	freep = get_free_page();

@@ -3,26 +3,31 @@
 #include "list.h"
 #include "string.h"
 #include "klog.h"
+#include "mp.h"
+
+// defined in mproc.c
+extern int init_mp();
 
 cpu_state_t cpuset[MAX_CPUS];
 static size_t cpunum;
 
-void init_processor()
+void init_bootstrap_processor()
 {
+	int ap;
+
 	printk("intialize processors ...\n");
 	bzero(cpuset, sizeof(cpuset));
-	if (init_mp() < 0)
+	ap = init_mp();
+	if (ap < 0) {
 		PANIC(LOG_CPU "init_mp: error");
+	} else if (ap > 0) {
+		init_local_apic();
+	}
 }
 
 cpu_state_t *get_processor()
 {
 	return &cpuset[0];
-}
-
-void inc_cpu_count()
-{
-	cpunum++;
 }
 
 size_t get_cpu_count()

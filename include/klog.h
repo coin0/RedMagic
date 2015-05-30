@@ -14,7 +14,7 @@ typedef enum {
 	LOG_LAST
 } log_level_t;
 
-#define LOG_LEVEL LOG_DBG	// build-macro: log level for kernel msg
+#define LOG_LEVEL LOG_INFO	// build-macro: log level for kernel msg
 
 // following KLOG_xxx definitions differ from log_level_t
 // only used for conditions

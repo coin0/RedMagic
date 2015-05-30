@@ -6,6 +6,7 @@
 #include "task.h"
 #include "sched.h"
 #include "locking.h"
+#include "mp.h"
 
 typedef struct {
 	uint_t proc_id;
@@ -28,15 +29,11 @@ typedef struct {
 } cpu_set_t;
 
 // global processor initialization
-extern void init_processor();
-
-// call mp.c
-extern int init_mp();
+extern void init_bootstrap_processor();
 
 // functions
 extern cpu_state_t *get_processor();
 extern size_t get_cpu_count();
-extern void inc_cpu_count();
 extern void cpu_reset_state(cpu_state_t * cpu);
 
 #define cpu_set_val(cpu, member, val) ((cpu)->member = (val))

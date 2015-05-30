@@ -10,8 +10,8 @@
  * under normal circumstances, used to verify that nobody uses
  * non-initialized list entries.
  */
-#define LIST_POISON1  ((void *) 0xf0000100)
-#define LIST_POISON2  ((void *) 0xf0000200)
+#define LIST_POISON1  ((void *) 0xfffffff0)
+#define LIST_POISON2  ((void *) 0xfffffff1)
 
 // calculate the offset of the specified MEMBER inside TYPE 
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)

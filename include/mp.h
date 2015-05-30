@@ -2,5 +2,7 @@
 #define MP_H
 
 #include "mproc.h"
+#include "lapic.h"
+#include "ioapic.h"
 
 #endif

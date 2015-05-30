@@ -1,9 +1,12 @@
 #include "common.h"
-#include "mproc.h"
+#include "mp.h"
 #include "paging.h"
 #include "string.h"
 #include "cpu.h"
 #include "klog.h"
+
+// global mp information
+mp_t mpinfo;
 
 /* migrated from xv6 */
 static mpfp_t *__search_mpfp(uint_t pa, size_t len);
@@ -99,11 +102,6 @@ static mpconf_t *mpconfig(mpfp_t ** pmp)
 	return conf;
 }
 
-// TODO move to lapic.c
-volatile uint_t *lapic;
-volatile mpioapic_t *ioapic;
-uchar_t ioapicid;
-
 int init_mp()
 {
 	uchar_t *p;
@@ -111,13 +109,14 @@ int init_mp()
 	mpconf_t *conf;
 	mpproc_t *proc;
 	mpfp_t *mp;
+	mpioapic_t *ioapic;
 
 	if ((conf = mpconfig(&mp)) == NULL) {
 		printk("could not find MP configuration\n");
 		return 0;
 	}
 
-	lapic = (uint_t *) conf->lapicaddr;
+	lapic_regp = (uint_t *) conf->lapicaddr;
 	for (p = (uchar_t *) (conf + 1); p < (uchar_t *) conf + conf->length;) {
 		switch (*p) {
 		case MPPROC:
@@ -147,7 +146,7 @@ int init_mp()
 			continue;
 		case MPIOAPIC:
 			ioapic = (mpioapic_t *) p;
-			ioapicid = ioapic->apicno;
+			ioapic_id = ioapic->apicno;
 			p += sizeof(mpioapic_t);
 			continue;
 		case MPBUS:
@@ -160,18 +159,27 @@ int init_mp()
 			ismp = 0;
 		}
 	}
+
 	if (!ismp) {
 		// Didn't like what we found; fall back to no MP.
-		ncpu = 1;
-		lapic = NULL;
-		ioapicid = 0;
+		mpinfo.ncpu = 1;
+		mpinfo.ismp = 0;
+		lapic_regp = NULL;
+		ioapic_id = 0;
 		return 0;
 	}
-
+	// Select IMCR,  Mask external interrupts
 	if (mp->imcrp) {
-		outb(0x22, 0x70);	// Select IMCR
-		outb(0x23, inb(0x23) | 1);	// Mask external interrupts.
+		outb(0x22, 0x70);
+		outb(0x23, inb(0x23) | 1);
 	}
+
+	if (ncpu > 1)
+		mpinfo.ismp = 1;
+	else
+		mpinfo.ismp = 0;
+	mpinfo.ncpu = ncpu;
+
 	// only return AP num
 	return ncpu - 1;
 }
