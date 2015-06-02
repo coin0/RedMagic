@@ -51,8 +51,8 @@ typedef struct registers {
 #define IRQ15 47
 
 // easy to understand and include some special IRQ verctors
-#define IRQ_TIMER 	IRQ0
-#define IRQ_KBD   	IRQ1
+#define IRQ_TIMER       IRQ0
+#define IRQ_KBD         IRQ1
 #define IRQ_COM1        IRQ4
 #define IRQ_IDE         IRQ14
 #define IRQ_ERROR       (IRQ0 + 19)
@@ -62,6 +62,6 @@ typedef struct registers {
 // For IRQs, to ease confusion, use the #defines above as the
 // first parameter.
 typedef void (*isr_t) (registers_t *);
-void register_interrupt_handler(_u8 n, isr_t handler);
+isr_t register_interrupt_handler(_u8 n, isr_t handler);
 
 #endif

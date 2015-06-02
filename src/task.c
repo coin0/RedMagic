@@ -246,6 +246,7 @@ static int verify_task_id(task_group_t * tgrp, task_id_t tid)
 
 static void __finish_thread()
 {
+	// TODO ... looks lots of work to do
 	printk("Finished \n");
 	while (1) ;
 }

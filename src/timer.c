@@ -15,6 +15,8 @@ static _u32 ticks = 0;
 #define _HZ_DIV(hz) (((hz) >= CLOCK_INT_HZ) ? 1 : CLOCK_INT_HZ / (hz))
 #define IF_HZ_EQ(hz) if (!(ticks % _HZ_DIV(hz)))
 
+static void init_timer_cb();
+
 static void timer_callback(registers_t * regs)
 {
 	cpu_state_t *cpu;
@@ -34,7 +36,7 @@ static void timer_callback(registers_t * regs)
 	}
 }
 
-void init_timer(_u32 frequency)
+void init_pit_timer(_u32 frequency)
 {
 	// Firstly, register our timer callback.
 	init_timer_cb();
@@ -56,7 +58,13 @@ void init_timer(_u32 frequency)
 	outb(0x40, h);
 }
 
-void init_timer_cb()
+void init_apic_timer(_u32 frequency)
+{
+	init_timer_cb();
+	lapic_init_timer(frequency);
+}
+
+static void init_timer_cb()
 {
 	register_interrupt_handler(IRQ0, &timer_callback);
 }

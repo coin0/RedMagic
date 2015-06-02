@@ -6,27 +6,29 @@
 
 #include "common.h"
 
-extern void init_timer_cb();
-
-//
-// definitions for PIT/8254 timer
-//
-#define CLOCK_TICK_RATE 1193180
 #define CLOCK_INT_HZ    1000
+
+//////////////////////////////////
+// definitions for PIT/8254 timer
+//////////////////////////////////
+#define CLOCK_TICK_RATE 1193180
 
 // define some useful time slices
 #define TICK_SEC CLOCK_INT_HZ
 #define TICK_MSEC (CLOCK_INT_HZ / 1000 == 0 ? 1 : CLOCK_INT_HZ / 1000);
 
-extern void init_timer(_u32 frequency);
-// end of PIT def
+extern void init_pit_timer(_u32 frequency);
+// end of PIT def ///////////////
 
-//
+//////////////////////////////
 // definitions for APIC timer
-//
-#define TIMER_APIC_ICR	100000
+//////////////////////////////
 
-// end of APIC timer
+// notice: better > 100000
+#define TIMER_APIC_DEFAULT_ICR	800000
+
+extern void init_apic_timer(_u32 frequency);
+// end of APIC timer ////////
 
 typedef struct {
 	uint_t enabled;

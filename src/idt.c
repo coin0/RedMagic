@@ -146,9 +146,14 @@ void irq_handler(registers_t * regs)
 	}
 }
 
-void register_interrupt_handler(_u8 n, isr_t handler)
+isr_t register_interrupt_handler(_u8 n, isr_t handler)
 {
+	isr_t prev_isr;
+
+	prev_isr = interrupt_handlers[n];
 	interrupt_handlers[n] = handler;
+
+	return prev_isr;
 }
 
 void local_irq_disable()

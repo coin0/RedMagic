@@ -3,6 +3,8 @@
 #include "klog.h"
 #include "interrupt.h"
 #include "timer.h"
+#include "rtc.h"
+#include "isr.h"
 
 // m from xv6
 // Local APIC registers, divided by 4 for use as uint[] indices.
@@ -43,6 +45,7 @@
 volatile uint_t *lapic_regp = NULL;
 
 static void lapic_write(int index, int value);
+static void lapic_set_timer(uint_t icr);
 
 static void lapic_write(int index, int value)
 {
@@ -58,14 +61,6 @@ void init_local_apic()
 
 	// Enable local APIC; set spurious interrupt vector.
 	lapic_write(SVR, ENABLE | IRQ_SPURIOUS);
-
-	// The timer repeatedly counts down at bus frequency
-	// from lapic[TICR] and then issues an interrupt.
-	// If xv6 cared more about precise timekeeping,
-	// TICR would be calibrated using an external time source.
-	lapic_write(TDCR, X1);
-	lapic_write(TIMER, PERIODIC | IRQ_TIMER);
-	lapic_write(TICR, TIMER_APIC_ICR);
 
 	// Disable logical interrupt lines.
 	lapic_write(LINT0, MASKED);
@@ -104,3 +99,127 @@ void lapic_eoi(void)
 	ASSERT(lapic_regp != NULL);
 	lapic_write(EOI, 0);
 }
+
+static void lapic_set_timer(uint_t icr)
+{
+	// The timer repeatedly counts down at bus frequency
+	// from lapic[TICR] and then issues an interrupt.
+	// If xv6 cared more about precise timekeeping,
+	// TICR would be calibrated using an external time source.
+	lapic_write(TDCR, X1);
+	lapic_write(TIMER, PERIODIC | IRQ_TIMER);
+	lapic_write(TICR, icr);
+}
+
+///////////////
+//  APIC timer
+///////////////
+static uint_t intval = 0;
+
+static void isr_apic_tm_test(registers_t * regs);
+static uint_t test_intrs_per_second();
+inline static void intr_reset();
+inline static void intr_inc();
+inline static void intr_get(uint_t * i);
+
+inline static void intr_reset()
+{
+	intval = 0;
+}
+
+inline static void intr_inc()
+{
+	intval++;
+}
+
+inline static void intr_get(uint_t * i)
+{
+	*i = intval;
+}
+
+static void isr_apic_tm_test(registers_t * regs)
+{
+	intr_inc();
+}
+
+#define R1 80
+#define D1 100000
+#define R2 40
+#define D2 50000
+#define R3 20
+#define D3 10000
+#define R4 10
+#define D4 3000
+#define R5 2
+#define D5 1000
+
+void lapic_init_timer(_u32 frequency)
+{
+	uint_t intrs, icr, freq;
+
+	icr = TIMER_APIC_DEFAULT_ICR;
+	lapic_set_timer(icr);
+
+	for (freq = frequency;;) {
+		// test how many ticks in one second, so we can get 1sec and 1msec
+		intrs = test_intrs_per_second();
+		log_dbg(LOG_CPU "apic timer: [[ %d ]]\n", intrs);
+
+		// a simple way to adjust interrupt interval
+		if (intrs <= freq - R1)
+			icr -= D1;
+		else if (intrs >= freq + R1)
+			icr += D1;
+		else {
+			if (intrs <= freq - R2)
+				icr -= D2;
+			else if (intrs >= freq + R2)
+				icr += D2;
+			else {
+				if (intrs <= freq - R3)
+					icr -= D3;
+				else if (intrs >= freq + R3)
+					icr += D3;
+				else {
+					if (intrs <= freq - R4)
+						icr -= D4;
+					else if (intrs >= freq + R4)
+						icr += D4;
+					else {
+						if (intrs <= freq - R5)
+							icr -= D5;
+						else if (intrs >= freq + R5)
+							icr += D5;
+						else
+							break;
+					}
+				}
+			}
+		}
+		lapic_set_timer(icr);
+		log_dbg(LOG_CPU "ICR: %d\n", icr);
+	}
+}
+
+static uint_t test_intrs_per_second()
+{
+	uint_t intrs;
+	rtcdate_t rtc1, rtc2;
+	isr_t isr;
+
+	rtc_time(&rtc1);
+	isr = register_interrupt_handler(IRQ_TIMER, &isr_apic_tm_test);
+	do {
+		rtc_time(&rtc2);
+		intr_reset();
+	} while (rtc1.second == rtc2.second);
+	do {
+		rtc_time(&rtc1);
+	} while (rtc1.second == rtc2.second);
+	register_interrupt_handler(IRQ_TIMER, isr);
+	intr_get(&intrs);
+
+	return intrs;
+}
+
+///// end of APIC timer ///////

@@ -44,15 +44,6 @@ int main(multiboot_t * mbp)
 	init_paging();
 	init_kheap();
 
-	// set system clock rate
-	if (!mpinfo.ismp) {
-		init_timer(CLOCK_INT_HZ);
-		printk("Kernel clock is set to %d HZ\n", CLOCK_INT_HZ);
-	} else {
-		// APIC timer has been already set in init_lapic
-		init_timer_cb();
-	}
-
 	// initialize kernel task and scheduling
 	setup_init_task();
 	init_sched();
