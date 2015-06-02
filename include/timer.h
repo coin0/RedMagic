@@ -23,10 +23,6 @@ extern void init_pit_timer(_u32 frequency);
 //////////////////////////////
 // definitions for APIC timer
 //////////////////////////////
-
-// notice: better > 100000
-#define TIMER_APIC_DEFAULT_ICR	800000
-
 extern void init_apic_timer(_u32 frequency);
 // end of APIC timer ////////
 
