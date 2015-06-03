@@ -9,9 +9,7 @@
 
 void show_kernel_pos()
 {
-	printk("kernel start @ 0x%08X\n", k_start);
-	printk("kernel end   @ 0x%08X\n", k_end);
-	printk("memory used: %d KB\n\n", (k_end - k_start + 1023) / 1024);
+	printk("kernel code_seg start @ 0x%08X\n", k_start);
 }
 
 void show_ARDS_from_multiboot(multiboot_t * mbp)
@@ -196,26 +194,17 @@ void init_paging()
 	void *p, *va, *_va;
 	_u32 map_start, map_end;
 
-	// scan initial memory address space from 0x00
+	// get memory map from multiboot struct
 	bzero((void *)&minfo, sizeof(mem_info_t));
 	get_mem_info_from_multiboot(mbootp, &minfo);
-	mp = minfo.mmap_entries;
-	for (; (_u32) mp < (_u32) minfo.mmap_entries + minfo.mmap_length; mp++) {
-		if (mp->base_addr_low == 0x0 && mp->base_addr_high == 0x0) {
-			if (mp->type != ARDS_TYPE_AVAIL || mp->length_low == 0)
-				PANIC("Low address(0x0) not available.");
-			pgtbls_end = mp->base_addr_low + mp->length_low;
-			break;
-		}
-	}
 
-	// stop! where is the ARDS entry starting from 0x0?
-	ASSERT(pgtbls_end > 0);
+	// kernel PDE/PTEs end before section text
+	pgtbls_end = (_u32) k_start;
 
 	// stop! space not enough, we need PGD_MAX page_directory_t entries 
 	// and at least 5 free frames)
 	ASSERT(PGD_BASE + sizeof(page_directory_t) * PGD_MAX + PAGE_SIZE * 5 <=
-	       0x0 + pgtbls_end);
+	       pgtbls_end);
 
 	// initialize page directory tables
 	pdp = (page_directory_t *) PGD_BASE;

@@ -26,7 +26,7 @@ p |________|
 
 // assum page dirs start from the second page of physical memory
 // the first page is reserved for the NULL pointer
-#define PGD_BASE         0x00001000
+#define PGD_BASE         0x00100000
 #define PGD_MAX          5
 #define PGD_IDX_KERNEL   0
 

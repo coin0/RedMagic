@@ -65,7 +65,6 @@ typedef struct {
 
 // kenel position defined in link conf
 extern _u8 k_start[];
-extern _u8 k_end[];
 
 extern void show_kernel_pos();
 extern void show_ARDS_from_multiboot(multiboot_t * mbp);

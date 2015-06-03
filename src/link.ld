@@ -6,7 +6,7 @@
 ENTRY(start)
 SECTIONS
 {
-  . = 0x100000;
+  . = 0x200000;
 
   PROVIDE( k_start = . );
   .text :
@@ -33,6 +33,5 @@ SECTIONS
 
   end = .; _end = .; __end = .;
 
-  PROVIDE( k_end = . );
   /DISCARD/ : { *(.comment) }
 }
