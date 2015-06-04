@@ -138,7 +138,7 @@ int init_mp()
 				printk
 				    ("found application processor #%d\n",
 				     proc->apicid);
-			cpu_set_val(&cpuset[ncpu], proc_id, ncpu);
+			cpu_set_val(&cpuset[ncpu], proc_id, proc->apicid);
 
 			// find next processor
 			ncpu++;

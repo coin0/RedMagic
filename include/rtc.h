@@ -3,6 +3,13 @@
 
 #include "common.h"
 
+#define CMOS_PORT    0x70
+#define CMOS_RETURN  0x71
+
+#define CMOS_STATA   0x0a
+#define CMOS_STATB   0x0b
+#define CMOS_UIP    (1 << 7)	// RTC update in progress
+
 typedef struct {
 	uint_t second;
 	uint_t minute;
@@ -23,5 +30,5 @@ inline static void rtc_test_delay(uint_t factor)
 }
 
 extern void rtc_time(rtcdate_t * rtc);
-
+extern void rtc_delay(uint_t seconds);
 #endif

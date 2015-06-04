@@ -16,6 +16,13 @@ SECTIONS
     . = ALIGN(4096);
   }
 
+  PROVIDE( apinit_start = . );
+  .apinit.text :
+  {
+    . = ALIGN(4096);
+  }
+  PROVIDE( apinit_end = . );
+
   .data :
   {
      data = .; _data = .; __data = .;

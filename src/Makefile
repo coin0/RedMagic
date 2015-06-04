@@ -18,7 +18,12 @@ all: $(SOURCES) link
 clean:
 	-rm *.o $(BIN) *~
 
-link:
+# strip relocation info from ap_real which is used to bootup APs in realmode
+pre-link:
+	@echo "STP" ap_real.o
+	@strip -s ap_real.o
+
+link: pre-link
 	@echo "LD " $(BIN) 
 	@ld $(LDFLAGS) -o $(BIN) $(SOURCES)
 

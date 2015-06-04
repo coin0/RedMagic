@@ -3,14 +3,6 @@
 #include "string.h"
 #include "timer.h"
 
-// m from xv6
-#define CMOS_PORT    0x70
-#define CMOS_RETURN  0x71
-
-#define CMOS_STATA   0x0a
-#define CMOS_STATB   0x0b
-#define CMOS_UIP    (1 << 7)	// RTC update in progress
-
 #define SECS    0x00
 #define MINS    0x02
 #define HOURS   0x04
@@ -72,4 +64,17 @@ void rtc_time(rtcdate_t * rtc)
 
 	*rtc = t1;
 	rtc->year += 2000;
+}
+
+void rtc_delay(uint_t seconds)
+{
+	rtcdate_t rtc1, rtc2;
+	uint_t repeat;
+
+	for (repeat = 0; repeat < seconds; repeat++) {
+		rtc_time(&rtc2);
+		do {
+			rtc_time(&rtc1);
+		} while (rtc1.second == rtc2.second);
+	}
 }

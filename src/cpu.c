@@ -9,7 +9,6 @@
 extern int init_mp();
 
 cpu_state_t cpuset[MAX_CPUS];
-static size_t cpunum;
 
 void init_bootstrap_processor()
 {
@@ -28,11 +27,6 @@ void init_bootstrap_processor()
 cpu_state_t *get_processor()
 {
 	return &cpuset[0];
-}
-
-size_t get_cpu_count()
-{
-	return cpunum;
 }
 
 void preempt_enable()

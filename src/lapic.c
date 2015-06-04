@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "rtc.h"
 #include "isr.h"
+#include "paging.h"
 
 // m from xv6
 // Local APIC registers, divided by 4 for use as uint[] indices.
@@ -19,7 +20,7 @@
 #define INIT       0x00000500	// INIT/RESET
 #define STARTUP    0x00000600	// Startup IPI
 #define DELIVS     0x00001000	// Delivery status
-#define ASSERT_    0x00004000	// Assert interrupt (vs deassert)
+#define _ASSERT    0x00004000	// Assert interrupt (vs deassert)
 #define DEASSERT   0x00000000
 #define LEVEL      0x00008000	// Level triggered
 #define BCAST      0x00080000	// Send to all APICs, including self.
@@ -136,3 +137,39 @@ void lapic_init_timer(_u32 frequency)
 }
 
 ///// end of APIC timer ///////
+
+// Start additional processor running entry code at addr.
+// See Appendix B of MultiProcessor Specification.
+void lapic_startap(uchar_t apicid, addr_t addr)
+{
+	int i;
+	ushort_t *wrv;
+
+	// "The BSP must initialize CMOS shutdown code to 0AH
+	// and the warm reset vector (DWORD based at 40:67) to point at
+	// the AP startup code prior to the [universal startup algorithm]."
+	outb(CMOS_PORT, 0xF);	// offset 0xF is shutdown code
+	outb(CMOS_PORT + 1, 0x0A);
+	wrv = (ushort_t *) __phys_to_virt_lm(NULL, (0x40 << 4 | 0x67));	// Warm reset vector
+	wrv[0] = 0;
+	wrv[1] = addr >> 4;
+
+	// "Universal startup algorithm."
+	// Send INIT (level-triggered) interrupt to reset other CPU.
+	lapic_write(ICRHI, apicid << 24);
+	lapic_write(ICRLO, INIT | LEVEL | _ASSERT);
+	rtc_delay(1);
+	lapic_write(ICRLO, INIT | LEVEL);
+	rtc_delay(1);		// should be 10ms, but too slow in Bochs!
+
+	// Send startup IPI (twice!) to enter code.
+	// Regular hardware is supposed to only accept a STARTUP
+	// when it is in the halted state due to an INIT.  So the second
+	// should be ignored, but it is part of the official Intel algorithm.
+	// Bochs complains about the second one.  Too bad for Bochs.
+	for (i = 0; i < 2; i++) {
+		lapic_write(ICRHI, apicid << 24);
+		lapic_write(ICRLO, STARTUP | (addr >> 12));
+		rtc_delay(1);
+	}
+}

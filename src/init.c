@@ -13,7 +13,7 @@ int v3(void *args);
 
 static mutex_t mlock;
 static semaphore_t ss;
-static int mode = 1;
+static int mode = 0;
 #include "system.h"
 
 int K_INIT(void *args)
