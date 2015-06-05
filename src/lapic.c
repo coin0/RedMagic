@@ -158,9 +158,9 @@ void lapic_startap(uchar_t apicid, addr_t addr)
 	// Send INIT (level-triggered) interrupt to reset other CPU.
 	lapic_write(ICRHI, apicid << 24);
 	lapic_write(ICRLO, INIT | LEVEL | _ASSERT);
-	rtc_delay(1);
+	rtc_test_delay(100);
 	lapic_write(ICRLO, INIT | LEVEL);
-	rtc_delay(1);		// should be 10ms, but too slow in Bochs!
+	rtc_test_delay(200);	// should be 10ms, but too slow in Bochs!
 
 	// Send startup IPI (twice!) to enter code.
 	// Regular hardware is supposed to only accept a STARTUP
@@ -170,6 +170,6 @@ void lapic_startap(uchar_t apicid, addr_t addr)
 	for (i = 0; i < 2; i++) {
 		lapic_write(ICRHI, apicid << 24);
 		lapic_write(ICRLO, STARTUP | (addr >> 12));
-		rtc_delay(1);
+		rtc_test_delay(200);
 	}
 }

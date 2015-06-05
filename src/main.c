@@ -21,6 +21,7 @@ extern uchar_t apinit_start[];
 extern uchar_t apinit_end[];
 
 extern void ap_start32();
+static int __main();
 static void start_smp();
 
 int main(multiboot_t * mbp)
@@ -65,9 +66,18 @@ int main(multiboot_t * mbp)
 	return 0xDEADBABA;
 }
 
+// this is main() function for other processors
+static int __main()
+{
+	printk("This is AP !\n");
+	while (1) ;
+	return 0xFADEFADE;
+}
+
 static void start_smp()
 {
 	int n;
+	void *stack;
 
 	for (n = 0; n < mpinfo.ncpu; n++) {
 		if (cpuset[n].flag_bsp) {
@@ -81,6 +91,21 @@ static void start_smp()
 		// linker script and move them to target address (<1M)
 		memmove((void *)ADDR_AP_REAL, apinit_start,
 			(addr_t) apinit_end - (addr_t) apinit_start);
+
+		// AFTER APs enter protected mode, 32bit code need jump back to
+		// kernel text section, put this address before ADDR_AP_REAL so
+		// AP boot section can simply get the address value
+		*(void **)(ADDR_AP_REAL - 4) = (void *)&__main;
+
+		// same as comments above, we allocate temporary stack space 
+		// for other processors, remember to free it when init task is
+		// setup to run
+		stack = get_free_page();
+		if (stack == NULL)
+			PANIC("No memory for AP stack");
+		*(void **)(ADDR_AP_REAL - 8) = (void *)stack;
+
+		// startup ! startup !! startup !!!
 		lapic_startap(cpuset[n].proc_id, ADDR_AP_REAL);
 		printk("CPU(AP) #%d is up ...\n", cpuset[n].proc_id);
 	}

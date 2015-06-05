@@ -31,10 +31,8 @@ pm32:
 	mov fs, ax
 	mov gs, ax
 
-	;; coin front
-	mov eax, 0x1234
-	mov [0x1000], eax
-	jmp $
+	mov esp, [ADDR_AP_REAL - 8]			; the stack
+	jmp dword [ADDR_AP_REAL - 4]			; the main
 
 ;; initial GDT for APs
 ALIGN 32
