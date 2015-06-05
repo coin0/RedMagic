@@ -56,6 +56,14 @@ static void lapic_write(int index, int value)
 	lapic_regp[ID];
 }
 
+int lapic_get_id()
+{
+	if (lapic_regp != NULL)
+		return lapic_regp[ID] >> 24;
+
+	return -1;
+}
+
 void init_local_apic()
 {
 	ASSERT(lapic_regp != NULL);

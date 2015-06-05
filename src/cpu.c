@@ -24,9 +24,32 @@ void init_bootstrap_processor()
 	}
 }
 
+void init_application_processor()
+{
+	init_local_apic();
+}
+
+cpu_state_t *get_boot_processor()
+{
+	int n;
+
+	for (n = 0; n < mpinfo.ncpu; n++)
+		if (cpuset[n].flag_bsp)
+			return &cpuset[n];
+
+	return NULL;
+}
+
 cpu_state_t *get_processor()
 {
-	return &cpuset[0];
+	int cpu_id, n;
+
+	cpu_id = lapic_get_id();
+	for (n = 0; n < mpinfo.ncpu; n++)
+		if (cpuset[n].proc_id == cpu_id)
+			return &cpuset[n];
+
+	return NULL;
 }
 
 void preempt_enable()

@@ -32,7 +32,8 @@ pm32:
 	mov gs, ax
 
 	mov esp, [ADDR_AP_REAL - 8]			; the stack
-	jmp dword [ADDR_AP_REAL - 4]			; the main
+	push dword [ADDR_AP_REAL - 12]			; push per-cpu struct
+	call dword [ADDR_AP_REAL - 4]			; the main
 
 ;; initial GDT for APs
 ALIGN 32

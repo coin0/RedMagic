@@ -1,6 +1,12 @@
 #ifndef GDT_H
 #define GDT_H
 
+#define SEG_NULL  0
+#define SEG_KCODE 1
+#define SEG_KDATA 2
+#define SEG_UCODE 3
+#define SEG_UDATA 4
+
 // This structure contains the value of one GDT entry.
 // We use the attribute 'packed' to tell GCC not to change
 // any of the alignment in the structure.
@@ -18,8 +24,10 @@ typedef struct {
 	_u32 base;		// The address of the first gdt_entry_t struct.
 } __attribute__ ((packed)) gdt_ptr_t;
 
+#include "cpu.h"
+
 // Initialisation function is publicly accessible.
-extern void init_global_descriptor_table();
+extern void init_global_descriptor_table(struct cpu_state *cpu);
 
 // Lets us access our ASM functions from our C code.
 extern void gdt_flush(_u32);

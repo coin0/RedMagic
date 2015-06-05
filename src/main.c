@@ -7,7 +7,7 @@
 #include "system.h"
 #include "print.h"
 #include "timer.h"
-#include "debug.h"
+#include "klog.h"
 #include "heap.h"
 #include "paging.h"
 #include "sched.h"
@@ -21,11 +21,13 @@ extern uchar_t apinit_start[];
 extern uchar_t apinit_end[];
 
 extern void ap_start32();
-static int __main();
+static int __main(cpu_state_t * cpu);
 static void start_smp();
 
 int main(multiboot_t * mbp)
 {
+	cpu_state_t *cpu;
+
 	// first is to save critical info from bootloader
 	mbootp = mbp;
 
@@ -39,9 +41,11 @@ int main(multiboot_t * mbp)
 
 	// init processors
 	init_bootstrap_processor();
+	cpu = get_boot_processor();
+	ASSERT(cpu != NULL);
 
 	// initialize descriptors
-	init_global_descriptor_table();
+	init_global_descriptor_table(cpu);
 	init_interrupt_descriptor_table();
 	init_io_apic();
 
@@ -67,9 +71,19 @@ int main(multiboot_t * mbp)
 }
 
 // this is main() function for other processors
-static int __main()
+static int __main(cpu_state_t * cpu)
 {
-	printk("This is AP !\n");
+	// init AP
+	init_application_processor();
+
+	// init segmentation
+	init_global_descriptor_table(cpu);
+
+	// init paging
+	// init IDT
+	// setup init
+	// init sched
+
 	while (1) ;
 	return 0xFADEFADE;
 }
@@ -105,8 +119,12 @@ static void start_smp()
 			PANIC("No memory for AP stack");
 		*(void **)(ADDR_AP_REAL - 8) = (void *)stack;
 
+		// each processor should maintain its own per-cpu struct
+		*(void **)(ADDR_AP_REAL - 12) = (void *)&cpuset[n];
+
 		// startup ! startup !! startup !!!
 		lapic_startap(cpuset[n].proc_id, ADDR_AP_REAL);
+
 		printk("CPU(AP) #%d is up ...\n", cpuset[n].proc_id);
 	}
 }
