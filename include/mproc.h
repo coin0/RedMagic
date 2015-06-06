@@ -1,6 +1,10 @@
 #ifndef MPROC_H
 #define MPROC_H
 
+#ifndef MP_H
+#error "Include mp.h instead"
+#endif
+
 #include "common.h"
 
 typedef struct mpfp {		// floating pointer
@@ -61,5 +65,9 @@ typedef struct {
 } mp_t;
 
 extern mp_t mpinfo;
+
+/* utilities */
+
+extern void smp_halt_others();
 
 #endif

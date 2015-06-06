@@ -83,4 +83,8 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 
+extern void smp_irq_inval_tlb();
+extern void smp_irq_stop_cpu();
+extern void smp_irq_local_timer();
+
 #endif

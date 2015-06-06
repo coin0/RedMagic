@@ -183,3 +183,15 @@ int init_mp()
 	// only return AP num
 	return ncpu - 1;
 }
+
+/*
+ *  utilities to manage self or other processors
+ */
+
+void smp_halt_others()
+{
+	if (!mpinfo.ismp)
+		return;
+
+	lapic_send_ipi_mcast(IRQ_STOP_CPU);
+}

@@ -5,5 +5,6 @@
 #include "interrupt.h"
 #include "multiboot.h"
 #include "boot.h"
+#include "cpu.h"
 
 #endif

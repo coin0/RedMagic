@@ -55,8 +55,13 @@ typedef struct registers {
 #define IRQ_KBD         IRQ1
 #define IRQ_COM1        IRQ4
 #define IRQ_IDE         IRQ14
-#define IRQ_ERROR       (IRQ0 + 19)
-#define IRQ_SPURIOUS    (IRQ0 + 31)
+#define IRQ_ERROR       (IRQ0 + 19)	// INT 51
+#define IRQ_SPURIOUS    (IRQ0 + 31)	// INT 63
+
+// SMP IRQ vectors
+#define IRQ_INVAL_TLB   52
+#define IRQ_STOP_CPU    53
+#define IRQ_LOCAL_TIMER 54
 
 // Enables registration of callbacks for interrupts or IRQs.
 // For IRQs, to ease confusion, use the #defines above as the

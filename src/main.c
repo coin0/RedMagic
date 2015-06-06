@@ -78,13 +78,19 @@ static int __main(cpu_state_t * cpu)
 
 	// init segmentation
 	init_global_descriptor_table(cpu);
+	init_interrupt_descriptor_table();
+
+	// enable local interrupt
+	local_irq_enable();
 
 	// init paging
-	// init IDT
-	// setup init
+	//switch_page_directory(k_pdir);
+
 	// init sched
+	//init_sched();
 
 	while (1) ;
+
 	return 0xFADEFADE;
 }
 

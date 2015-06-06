@@ -88,6 +88,16 @@ static void init_8259A()
 	// TODO disable Master/Slave int with masks except Slave IRQ
 }
 
+static void init_smp_irq()
+{
+	if (!mpinfo.ismp)
+		return;
+
+	idt_set_gate(IRQ_INVAL_TLB, (_u32) smp_irq_inval_tlb, 0x08, 0x8E);
+	idt_set_gate(IRQ_STOP_CPU, (_u32) smp_irq_stop_cpu, 0x08, 0x8E);
+	idt_set_gate(IRQ_LOCAL_TIMER, (_u32) smp_irq_local_timer, 0x08, 0x8E);
+}
+
 static void init_idt()
 {
 	idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
@@ -97,6 +107,7 @@ static void init_idt()
 
 	init_cpu_isr();
 	init_8259A();
+	init_smp_irq();
 
 	idt_flush((_u32) & idt_ptr);
 }
@@ -120,7 +131,8 @@ void isr_handler(registers_t * regs)
 	if (interrupt_handlers[regs->int_no]) {
 		interrupt_handlers[regs->int_no] (regs);
 	} else {
-		printk("Received interrupt #%d\n", regs->int_no);
+		printk("CPU #%u received interrupt #%d\n",
+		       get_processor()->proc_id, regs->int_no);
 	}
 }
 
@@ -128,15 +140,17 @@ void isr_handler(registers_t * regs)
 // for interrupt requests from 8259A
 void irq_handler(registers_t * regs)
 {
-	// Send an EOI (end of interrupt) signal to the PICs.
-	// If this interrupt involved the slave.
-	if (regs->int_no >= 40) {
-		// Send reset signal to slave.
-		outb(0xA0, 0x20);
+	// TODO if not pic should we skip 8259?
+	if (regs->int_no >= IRQ0 && regs->int_no <= IRQ15) {
+		// Send an EOI (end of interrupt) signal to the PICs.
+		// If this interrupt involved the slave.
+		if (regs->int_no >= 40) {
+			// Send reset signal to slave.
+			outb(0xA0, 0x20);
+		}
+		// Send reset signal to master. (As well as slave, if necessary).
+		outb(0x20, 0x20);
 	}
-	// Send reset signal to master. (As well as slave, if necessary).
-	outb(0x20, 0x20);
-
 	// send an EOI to local APIC
 	lapic_eoi();
 

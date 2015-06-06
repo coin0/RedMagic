@@ -3,7 +3,6 @@
 #include "list.h"
 #include "string.h"
 #include "klog.h"
-#include "mp.h"
 
 // defined in mproc.c
 extern int init_mp();

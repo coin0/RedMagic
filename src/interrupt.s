@@ -127,6 +127,21 @@ IRQ  13,    45
 IRQ  14,    46
 IRQ  15,    47
 
+; define macro for SMP IRQ handlers
+%macro SMP_IRQ 2
+  global smp_irq_%1
+  smp_irq_%1:
+    cli
+    push byte 0
+    push byte %2
+    jmp irq_common_stub
+%endmacro
+
+;; some SMP vectors
+SMP_IRQ  inval_tlb,   52
+SMP_IRQ  stop_cpu,    53
+SMP_IRQ  local_timer, 54
+
 ; In isr.c
 extern irq_handler
 

@@ -4,7 +4,6 @@
 #include "interrupt.h"
 #include "timer.h"
 #include "rtc.h"
-#include "isr.h"
 #include "paging.h"
 
 // m from xv6
@@ -17,15 +16,21 @@
 #define ENABLE     0x00000100	// Unit Enable
 #define ESR     (0x0280/4)	// Error Status
 #define ICRLO   (0x0300/4)	// Interrupt Command
+#define FIXED      0x00000000
+#define LOWEST     0x00000100
+#define SMI        0x00000200
+#define REMRD      0x00000300
+#define NMI        0x00000400
 #define INIT       0x00000500	// INIT/RESET
 #define STARTUP    0x00000600	// Startup IPI
 #define DELIVS     0x00001000	// Delivery status
 #define _ASSERT    0x00004000	// Assert interrupt (vs deassert)
 #define DEASSERT   0x00000000
 #define LEVEL      0x00008000	// Level triggered
+#define SELF       0x00040000	// Send to self.
 #define BCAST      0x00080000	// Send to all APICs, including self.
+#define MCAST      0x000C0000	// Send to all APICs execept self.
 #define BUSY       0x00001000
-#define FIXED      0x00000000
 #define ICRHI   (0x0310/4)	// Interrupt Command [63:32]
 #define TIMER   (0x0320/4)	// Local Vector Table 0 (TIMER)
 #define X1         0x0000000B	// divide counts by 1
@@ -47,6 +52,7 @@ volatile uint_t *lapic_regp = NULL;
 
 static void lapic_write(int index, int value);
 static void lapic_set_timer(uint_t icr);
+static void lapic_irq_stop_cpu_handler(registers_t * regs);
 
 static void lapic_write(int index, int value)
 {
@@ -97,6 +103,9 @@ void init_local_apic()
 
 	// Enable interrupts on the APIC (but not on the processor).
 	lapic_write(TPR, 0);
+
+	// register IPI command handlers
+	register_interrupt_handler(IRQ_STOP_CPU, &lapic_irq_stop_cpu_handler);
 }
 
 // Acknowledge interrupt.
@@ -180,4 +189,34 @@ void lapic_startap(uchar_t apicid, addr_t addr)
 		lapic_write(ICRLO, STARTUP | (addr >> 12));
 		rtc_test_delay(200);
 	}
+}
+
+void lapic_send_ipi_bcast(int vector)
+{
+	uint_t cfg = 0;
+
+	cfg |= FIXED | BCAST | vector;
+	lapic_write(ICRLO, cfg);
+}
+
+void lapic_send_ipi_mcast(int vector)
+{
+	uint_t cfg = 0;
+
+	cfg |= FIXED | MCAST | vector;
+	lapic_write(ICRLO, cfg);
+}
+
+void lapic_send_ipi_self(int vector)
+{
+	uint_t cfg = 0;
+
+	cfg |= FIXED | SELF | vector;
+	lapic_write(ICRLO, cfg);
+}
+
+static void lapic_irq_stop_cpu_handler(registers_t * regs)
+{
+	printk("CPU #%u received IRQ_STOP_CPU, stopped.\n", lapic_get_id());
+	for (;;) ;
 }
