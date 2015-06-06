@@ -29,11 +29,9 @@ int main(multiboot_t * mbp)
 	cpu_state_t *cpu;
 
 	// first is to save critical info from bootloader
+	// and get symbol tables so we can print back traces
 	mbootp = mbp;
-
-#ifdef MODE_DBG
 	init_debug(mbp);
-#endif
 
 	// reset text-mode
 	c80_clear();
@@ -84,7 +82,7 @@ static int __main(cpu_state_t * cpu)
 	local_irq_enable();
 
 	// init paging
-	//switch_page_directory(k_pdir);
+	switch_page_directory(k_pdir);
 
 	// init sched
 	//init_sched();

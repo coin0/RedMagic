@@ -4,10 +4,6 @@
 #include "common.h"
 #include "elf.h"
 
-// Debug switch (debug-on by default)
-#define MODE_DBG		// build-macro: debug mode
-#define MODE_TRC		// build-macro: trace mode
-
 extern void init_debug(multiboot_t * mboot_ptr);
 extern void print_stack_trace();
 extern void print_cur_status();

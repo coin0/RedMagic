@@ -21,12 +21,7 @@ void panic(const char *msg, const char *file, _u32 line)
 
 	printk("\n*** KERNEL PANIC on CPU #%u: %s, in %s line %d\n",
 	       get_processor()->proc_id, msg, file, line);
-
-#ifdef MODE_DBG
 	print_stack_trace();
-#else
-	printk("Stack trace not available, use debug-on kernel.\n");
-#endif
 	printk("***\n");
 
 	while (1) ;
