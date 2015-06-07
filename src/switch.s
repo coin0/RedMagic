@@ -52,5 +52,7 @@ switch_to_init:
         push eax
         popf
 
+        call preempt_enable     ; caller should be schedule()
+
         ret
 

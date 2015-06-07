@@ -85,9 +85,7 @@ static int __main(cpu_state_t * cpu)
 	switch_page_directory(k_pdir);
 
 	// init sched
-	//init_sched();
-
-	while (1) ;
+	init_sched();
 
 	return 0xFADEFADE;
 }

@@ -49,12 +49,15 @@ void schedule()
 	preempt_disable();
 
 	cpu = get_processor();
-	nextp = pick_next_thread(cpu);
 	rthread = cpu->rthread;
+	nextp = pick_next_thread(cpu);
 	cpu->rthread = nextp;
 
-	// will re-enable preemption in switch_to
-	switch_to(&rthread->context, &nextp->context);
+	// will re-enable preemption in switch_to(_init)
+	if (rthread != NULL) {
+		switch_to(&rthread->context, &nextp->context);
+	} else
+		switch_to_init(&nextp->context);
 }
 
 static thread_t *pick_next_thread(cpu_state_t * cur)
@@ -85,14 +88,11 @@ static thread_t *__do_sched_rr(cpu_state_t * cur)
 {
 	rthread_list_t *tlist;
 
-	// PANIC in following cases
-	if (list_empty(&cur->runq))
-		PANIC("CPU is idle");
-
-	tlist = find_thread_in_rq(cur->rthread, &cur->runq);
-	if (tlist == NULL)
-		PANIC("Running thread is not in RQ");
-
+	if (cur->rthread != NULL) {
+		tlist = find_thread_in_rq(cur->rthread, &cur->runq);
+		if (tlist == NULL)
+			PANIC("Running thread is not in RQ");
+	}
 	// if we do not have any thread in T_READY, let's fall into an
 	// infinite loop till a thread is waked up, enable interrupt so
 	// that we can receive INT events to wakeup threads, otherwise
@@ -101,13 +101,26 @@ static thread_t *__do_sched_rr(cpu_state_t * cur)
 	local_irq_enable();
 
 	do {
-		if (list_is_last(&tlist->runq, &cur->runq))
+		if (cur->rthread != NULL) {
+			if (list_is_last(&tlist->runq, &cur->runq))
+				tlist =
+				    list_first_entry(&cur->runq, rthread_list_t,
+						     runq);
+			else
+				tlist = list_next_entry(tlist, runq);
+		} else {
+			// probably this is the initial scheduling, fetch the
+			// first entry of runq, if NULL, keep polling
+			// otherwise set as current thread to start RR sched
 			tlist =
-			    list_first_entry(&cur->runq, rthread_list_t, runq);
-		else
-			tlist = list_next_entry(tlist, runq);
-
-	} while (tlist->threadp->status != T_READY);
+			    list_first_entry_or_null(&cur->runq, rthread_list_t,
+						     runq);
+			if (tlist == NULL)
+				continue;
+			else
+				cur->rthread = tlist->threadp;
+		}
+	} while (tlist == NULL || tlist->threadp->status != T_READY);
 
 	local_irq_restore();
 
@@ -122,17 +135,14 @@ static thread_t *__do_sched_pior(cpu_state_t * cur)
 void init_sched()
 {
 	cpu_state_t *cpu;
-	rthread_list_t *init;
 
 	cpu = get_processor();
 
-	// before scheduling, the init task should be already added to rq
-	ASSERT(!list_empty(&cpu->runq));
+	// before scheduling, for BSP the init task should be already added to rq
+	ASSERT(!cpu->flag_bsp || (cpu->flag_bsp && !list_empty(&cpu->runq)));
 
-	init = list_first_entry(&cpu->runq, rthread_list_t, runq);
-	cpu->rthread = init->threadp;
 	cpu->scheduler = SCHED_DEFAULT;
-	switch_to_init(&(cpu->rthread->context));
+	schedule();
 }
 
 static inline void set_thread_status(thread_state_t status)

@@ -20,6 +20,11 @@ void init_bootstrap_processor()
 		PANIC(LOG_CPU "init_mp: error");
 	} else if (ap > 0) {
 		init_local_apic();
+	} else {
+		// ap == 0, UP
+		cpu_reset_state(&cpuset[0]);
+		cpu_set_val(&cpuset[0], flag_bsp, 1);
+		cpu_set_val(&cpuset[0], proc_id, 0);
 	}
 }
 
@@ -71,4 +76,5 @@ void cpu_reset_state(cpu_state_t * cpu)
 	spin_lock_init(&cpu->rq_lock);
 	cpu->flag_bsp = 0;
 	cpu->preempt_on = 1;
+	cpu->rthread = NULL;
 }
