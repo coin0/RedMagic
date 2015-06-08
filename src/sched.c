@@ -11,6 +11,11 @@
 #include "print.h"
 #include "timer.h"
 
+static cpu_state_t *pick_processor();
+static cpu_state_t *__pick_processor_fsr();
+static void rq_calc_len_and_ready(cpu_state_t * cpu, size_t * len,
+				  size_t * ready);
+
 static thread_t *pick_next_thread(cpu_state_t * cur);
 static thread_t *__do_sched(cpu_state_t * cur);
 static thread_t *__do_sched_rr(cpu_state_t * cur);
@@ -132,6 +137,59 @@ static thread_t *__do_sched_pior(cpu_state_t * cur)
 	return NULL;
 }
 
+static cpu_state_t *pick_processor()
+{
+	if (!mpinfo.ismp)
+		return get_processor();
+
+	return __pick_processor_fsr();
+}
+
+/* pick first cpu with shortest queue and ready */
+static cpu_state_t *__pick_processor_fsr()
+{
+	uint_t i;
+	size_t len, ready;
+	size_t prev_len, prev_ready;
+	cpu_state_t *cpu;
+
+	ASSERT(mpinfo.ismp);
+
+	for (i = 0, cpu = cpuset; i < mpinfo.ncpu; i++) {
+		rq_calc_len_and_ready(&cpu[i], &len, &ready);
+		if (i == 0 || len < prev_len
+		    || (len == prev_len && ready < prev_ready)) {
+			cpu = &cpuset[i];
+			prev_len = len;
+			prev_ready = ready;
+		}
+	}
+
+	return cpu;
+}
+
+static void rq_calc_len_and_ready(cpu_state_t * cpu, size_t * len,
+				  size_t * ready)
+{
+	rthread_list_t *tlist;
+
+	*len = 0;
+	*ready = 0;
+
+	if (list_empty(&cpu->runq))
+		return;
+
+	tlist = list_first_entry(&cpu->runq, rthread_list_t, runq);
+	for (;;) {
+		(*len)++;
+		if (tlist->threadp->status == T_READY)
+			(*ready)++;
+		if (list_is_last(&tlist->runq, &cpu->runq))
+			break;
+		tlist = list_next_entry(tlist, runq);
+	}
+}
+
 void init_sched()
 {
 	cpu_state_t *cpu;
@@ -193,7 +251,7 @@ static int add_thread_to_rq(thread_t * threadp)
 	if (ptr == NULL)
 		return 1;
 
-	cpu = get_processor();
+	cpu = pick_processor();
 	ptr->threadp = threadp;
 	spin_lock_irqsave(&cpu->rq_lock);
 	list_add_tail(&ptr->runq, &cpu->runq);

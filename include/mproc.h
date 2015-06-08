@@ -69,5 +69,6 @@ extern mp_t mpinfo;
 /* utilities */
 
 extern void smp_halt_others();
+extern void smp_tick_others();
 
 #endif

@@ -44,7 +44,7 @@ int v1(void *args)
 			sem_down(&ss);
 
 		printk_color(rc_black, rc_red, "[B]");
-		i = 10;
+		i = 5;
 		for (; i > 0; i--) {
 			printk_color(rc_black, rc_red, "B");
 			pause(1);
@@ -72,7 +72,7 @@ int v2(void *args)
 			sem_down(&ss);
 
 		printk_color(rc_black, rc_blue, "[C]");
-		i = 10;
+		i = 5;
 		for (; i > 0; i--) {
 			printk_color(rc_black, rc_blue, "C");
 			pause(1);
@@ -99,10 +99,10 @@ int v3(void *args)
 		else
 			sem_down(&ss);
 
-		printk("[A]");
-		i = 10;
+		printk_color(rc_black, rc_green, "[A]");
+		i = 5;
 		for (; i > 0; i--) {
-			printk("A");
+			printk_color(rc_black, rc_green, "A");
 			pause(1);
 		}
 

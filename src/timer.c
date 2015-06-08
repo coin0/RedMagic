@@ -21,9 +21,12 @@ static void timer_callback(registers_t * regs)
 {
 	cpu_state_t *cpu;
 
-	ticks++;
-
 	cpu = get_processor();
+
+	if (cpu->flag_bsp) {
+		ticks++;
+		smp_tick_others();
+	}
 
 	IF_HZ_EQ(CHK_ALM_HZ) {
 		// check alarms inside blocked threads
