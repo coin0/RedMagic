@@ -75,6 +75,6 @@ void cpu_reset_state(cpu_state_t * cpu)
 	INIT_LIST_HEAD(&cpu->runq);
 	spin_lock_init(&cpu->rq_lock);
 	cpu->flag_bsp = 0;
-	cpu->preempt_on = 1;
+	cpu->preempt_on = 0;
 	cpu->rthread = NULL;
 }

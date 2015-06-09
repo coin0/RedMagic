@@ -18,12 +18,6 @@ static int mode = 0;
 
 int K_INIT(void *args)
 {
-	// set system clock
-	if (!mpinfo.ismp)
-		init_pit_timer(CLOCK_INT_HZ);
-	else
-		init_apic_timer(CLOCK_INT_HZ);
-
 	mutex_init(&mlock);
 	sem_init(&ss, 2);
 

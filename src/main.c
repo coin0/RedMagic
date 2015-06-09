@@ -60,6 +60,12 @@ int main(multiboot_t * mbp)
 	if (mpinfo.ismp)
 		start_smp();
 
+	// start system clock
+	if (!mpinfo.ismp)
+		init_pit_timer(CLOCK_INT_HZ);
+	else
+		init_apic_timer(CLOCK_INT_HZ);
+
 	// initialize kernel task and scheduling
 	setup_init_task();
 	init_sched();
