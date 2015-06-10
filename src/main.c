@@ -13,6 +13,7 @@
 #include "sched.h"
 #include "cpu.h"
 #include "string.h"
+#include "device.h"
 
 multiboot_t *mbootp;
 
@@ -55,6 +56,10 @@ int main(multiboot_t * mbp)
 	show_ARDS_from_multiboot(mbp);
 	init_paging();
 	init_kheap();
+
+	// initialize devices and rootfs
+	init_dev();
+	//init_root_fs();
 
 	// start all APs
 	if (mpinfo.ismp)
