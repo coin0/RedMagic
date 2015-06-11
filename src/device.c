@@ -1,13 +1,26 @@
 #include "common.h"
 #include "device.h"
 #include "klog.h"
+#include "heap.h"
+#include "string.h"
 
+/* common */
+static void __init_dev_common(dev_t * dev);
+
+/* ramfs */
+static blk_dev_ops_t ramfs_dev_ops;
 static int init_ramfs();
-static int init_ide();
+static int ramfs_write_block(buf_cache_t * buf);
+static int ramfs_read_block(buf_cache_t * buf, uint_t blkno);
+static void __init_blk_dev_common(dev_t * dev);
 
-static dev_list_t devices[] = {
-	{"ramfs", init_ramfs, 1, 1},
-	{"ide", init_ide, 1, 1},
+/* ide */
+static int init_ide_master();
+
+/* device list */
+static dev_t devices[] = {
+	{"ramfs", DEV_BLOCK, init_ramfs, NULL, 1, 1},
+	{"hda", DEV_BLOCK, init_ide_master, NULL, 1, 1},
 };
 
 void init_dev()
@@ -15,24 +28,88 @@ void init_dev()
 	int status;
 	uint_t i, dev_num;
 
-	dev_num = sizeof(devices) / sizeof(dev_list_t);
+	dev_num = sizeof(devices) / sizeof(dev_t);
 	for (i = 0; i < dev_num; i++) {
-		log_info(LOG_DEV "loading %s ...\n", devices[i].dev_name);
+		if (!devices[i].onboot)
+			continue;
+		log_info(LOG_DEV "loading %s ...\n", devices[i].name);
+		__init_dev_common(&devices[i]);
 		if ((status = devices[i].init_func()) != OK) {
 			log_err(LOG_DEV "%s was not loaded, status %d\n",
-				devices[i].dev_name, status);
+				devices[i].name, status);
 			continue;
-
 		}
 	}
 }
 
-static int init_ramfs()
+dev_t *get_dev_by_name(const char *name)
+{
+	uint_t i, dev_num;
+
+	dev_num = sizeof(devices) / sizeof(dev_t);
+	for (i = 0; i < dev_num; i++)
+		if (strcmp(devices[i].name, name) == 0)
+			return &devices[i];
+	return NULL;
+}
+
+static void __init_dev_common(dev_t * dev)
+{
+	switch (dev->type) {
+	case DEV_BLOCK:
+		__init_blk_dev_common(dev);
+		break;
+	default:
+		PANIC("#BUG");
+		break;
+	}
+}
+
+static void __init_blk_dev_common(dev_t * dev)
+{
+	blk_dev_t *blk_dev;
+
+	// TODO destroy device 'kfree'
+	dev->ptr = (blk_dev_t *) kmalloc(sizeof(blk_dev_t));
+	if (dev->ptr == NULL)
+		PANIC("common blk_dev_init failed");
+	blk_dev = dev->ptr;
+
+	blk_dev->cache_num = 0;
+	blk_dev->block_size = BLOCK_SIZE;
+	INIT_LIST_HEAD(&blk_dev->list);
+	INIT_LIST_HEAD(&blk_dev->io);
+	blk_dev->ops = ramfs_dev_ops;
+}
+
+/*
+ *   ram filesystem
+ */
+static blk_dev_ops_t ramfs_dev_ops = {
+	.read_block = ramfs_read_block,
+	.write_block = ramfs_write_block
+};
+
+static int ramfs_write_block(buf_cache_t * buf)
 {
 	return OK;
 }
 
-static int init_ide()
+static int ramfs_read_block(buf_cache_t * buf, uint_t blkno)
+{
+	return OK;
+}
+
+static int init_ramfs()
+{
+	return ramfs_init();
+}
+
+/*
+ *    IDE
+ */
+
+static int init_ide_master()
 {
 	return OK;
 }

@@ -6,10 +6,12 @@
 #include "sched.h"
 #include "timer.h"
 #include "rtc.h"
+#include "device.h"
 
 int v1(void *args);
 int v2(void *args);
 int v3(void *args);
+int v(void *args);
 
 static mutex_t mlock;
 static semaphore_t ss;
@@ -17,6 +19,18 @@ static int mode = 0;
 #include "system.h"
 
 int K_INIT(void *args)
+{
+	dev_t *dev;
+
+	dev = get_dev_by_name("hda");
+	printk("%s\n", dev->name);
+
+	create_thread(v, NULL);
+
+	return 0;
+}
+
+int v(void *args)
 {
 	mutex_init(&mlock);
 	sem_init(&ss, 2);
