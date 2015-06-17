@@ -97,10 +97,8 @@ static buf_cache_t *get_buffer(blk_dev_t * bdev, uint_t blkno)
 			}
 		}
 	}
-	mutex_unlock(&bdev->lock);
 
 	// not found, then scan from tail to find a buffer that is available
-	mutex_lock(&bdev->lock);
 	list_for_each_entry_reverse(buf, &bdev->list, list) {
 		if ((!(buf->flags & B_BUSY) && !(buf->flags & B_DIRTY))
 		    || (buf->flags & B_UNUSED)) {
