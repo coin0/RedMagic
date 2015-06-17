@@ -5,6 +5,6 @@
 #error "include device.h instead"
 #endif
 
-extern int ramfs_init();
+extern int init_ramfs(dev_t * dev);
 
 #endif

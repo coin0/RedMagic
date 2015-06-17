@@ -3,7 +3,7 @@
 #include "common.h"
 #include "debug.h"
 #include "interrupt.h"
-#include "ide.h"
+#include "device.h"
 
 #define IDE_BSY       0x80
 #define IDE_DRDY      0x40
@@ -21,8 +21,8 @@
 static struct buf *idequeue;
 
 static int havedisk1;
-static void ide_start(struct buf *);
 
+static void ide_start(struct buf *);
 static void ide_int_handler(registers_t * regs);
 
 // Wait for IDE disk to become ready.
@@ -34,6 +34,11 @@ static int ide_wait(int checkerr)
 	if (checkerr && (r & (IDE_DF | IDE_ERR)) != 0)
 		return -1;
 	return 0;
+}
+
+int init_ide_master(dev_t * dev)
+{
+	return OK;
 }
 
 void ide_init(void)

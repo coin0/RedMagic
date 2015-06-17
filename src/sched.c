@@ -286,6 +286,7 @@ thread_t *get_curr_thread()
 
 int make_sleep()
 {
+	// TODO need spin-lock for threads
 	set_thread_status(T_BLOCKED);
 
 	return OK;
@@ -302,10 +303,12 @@ int make_sleep_resched()
 int wake_up(thread_t * threadp)
 {
 	if (threadp->status == T_BLOCKED) {
+		// TODO need spin-lock for threads
 		__set_thread_status(threadp, T_READY);
 		return OK;
 	} else {
-		log_warn(LOG_SCHED "try to wake up non-sleeping thread[0x%08X]",
+		log_warn(LOG_SCHED
+			 "try to wake up non-sleeping thread[0x%08X]\n",
 			 threadp);
 		return 1;
 	}

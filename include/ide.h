@@ -1,6 +1,10 @@
 #ifndef IDE_H
 #define IDE_H
 
+#ifndef DEVICE_H
+#error "include device.h instead"
+#endif
+
 #include "common.h"
 
 struct buf {
@@ -17,6 +21,7 @@ struct buf {
 #define B_VALID 0x2		// buffer has been read from disk
 #define B_DIRTY 0x4		// buffer needs to be written to disk
 
+extern int init_ide_master();
 extern void ide_rw(struct buf *b);
 
 #endif

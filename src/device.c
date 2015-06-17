@@ -3,19 +3,14 @@
 #include "klog.h"
 #include "heap.h"
 #include "string.h"
+#include "locking.h"
 
-/* common */
+/* common block devices */
+static blk_dev_ops_t com_blk_dev_ops;
 static void __init_dev_common(dev_t * dev);
-
-/* ramfs */
-static blk_dev_ops_t ramfs_dev_ops;
-static int init_ramfs();
-static int ramfs_write_block(buf_cache_t * buf);
-static int ramfs_read_block(buf_cache_t * buf, uint_t blkno);
 static void __init_blk_dev_common(dev_t * dev);
-
-/* ide */
-static int init_ide_master();
+static int bdev_common_write_block(buf_cache_t * buf);
+static int bdev_common_read_block(buf_cache_t * buf, uint_t blkno);
 
 /* device list */
 static dev_t devices[] = {
@@ -34,7 +29,7 @@ void init_dev()
 			continue;
 		log_info(LOG_DEV "loading %s ...\n", devices[i].name);
 		__init_dev_common(&devices[i]);
-		if ((status = devices[i].init_func()) != OK) {
+		if ((status = devices[i].init_func(&devices[i])) != OK) {
 			log_err(LOG_DEV "%s was not loaded, status %d\n",
 				devices[i].name, status);
 			continue;
@@ -75,41 +70,26 @@ static void __init_blk_dev_common(dev_t * dev)
 		PANIC("common blk_dev_init failed");
 	blk_dev = dev->ptr;
 
-	blk_dev->cache_num = 0;
+	blk_dev->buf_num = 0;
 	blk_dev->block_size = BLOCK_SIZE;
+	blk_dev->total_blks = 0;
 	INIT_LIST_HEAD(&blk_dev->list);
 	INIT_LIST_HEAD(&blk_dev->io);
-	blk_dev->ops = ramfs_dev_ops;
+	blk_dev->ops = &com_blk_dev_ops;
+	mutex_init(&blk_dev->lock);
 }
 
-/*
- *   ram filesystem
- */
-static blk_dev_ops_t ramfs_dev_ops = {
-	.read_block = ramfs_read_block,
-	.write_block = ramfs_write_block
+static blk_dev_ops_t com_blk_dev_ops = {
+	.read_block = bdev_common_read_block,
+	.write_block = bdev_common_write_block
 };
 
-static int ramfs_write_block(buf_cache_t * buf)
+static int bdev_common_write_block(buf_cache_t * buf)
 {
 	return OK;
 }
 
-static int ramfs_read_block(buf_cache_t * buf, uint_t blkno)
-{
-	return OK;
-}
-
-static int init_ramfs()
-{
-	return ramfs_init();
-}
-
-/*
- *    IDE
- */
-
-static int init_ide_master()
+static int bdev_common_read_block(buf_cache_t * buf, uint_t blkno)
 {
 	return OK;
 }

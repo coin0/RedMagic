@@ -12,6 +12,7 @@ int v1(void *args);
 int v2(void *args);
 int v3(void *args);
 int v(void *args);
+int u(void *args);
 
 static mutex_t mlock;
 static semaphore_t ss;
@@ -21,12 +22,33 @@ static int mode = 0;
 int K_INIT(void *args)
 {
 	dev_t *dev;
+	blk_dev_t *bdev;
+	uchar_t a[BLOCK_SIZE];
 
-	dev = get_dev_by_name("hda");
+	create_thread(u, NULL);
+
+	dev = get_dev_by_name("ramfs");
 	printk("%s\n", dev->name);
+	bdev = (blk_dev_t *) (dev->ptr);
+	while (1) {
+		bdev_read_buffer(bdev, 0, a);
+	}
+	//create_thread(v, NULL);
 
-	create_thread(v, NULL);
+	return 0;
+}
 
+int u(void *args)
+{
+	dev_t *dev;
+	blk_dev_t *bdev;
+	uchar_t a[BLOCK_SIZE];
+
+	dev = get_dev_by_name("ramfs");
+	bdev = (blk_dev_t *) (dev->ptr);
+	while (1) {
+		bdev_read_buffer(bdev, 0, a);
+	}
 	return 0;
 }
 
