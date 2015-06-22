@@ -1,4 +1,12 @@
 /*
+ *      Red Magic 1996 - 2015
+ *
+ *      sched.c - scheduler for tasks and threads under SMP
+ *
+ *      2015 Lin Coin - initial version
+ */
+
+/*
  *  scheduler
  */
 

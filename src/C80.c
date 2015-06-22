@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      C80.c - 80x25 text-mode for initial bootup stage
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "common.h"
 #include "C80.h"
 #include "print.h"

@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      idt.c - setup IDT entries for the platform of X86
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "common.h"
 #include "string.h"
 #include "print.h"

@@ -1,4 +1,12 @@
 /*
+ *      Red Magic 1996 - 2015
+ *
+ *      kmalloc.c - memory management in variable size, heap in kernel space
+ *
+ *      2015 Lin Coin - initial version
+ */
+
+/*
  *  heaps
  */
 

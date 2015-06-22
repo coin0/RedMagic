@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      debug.c - debug functions to help print useful information at runtime
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "debug.h"
 #include "print.h"
 #include "elf.h"

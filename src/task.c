@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      task.c - task and thread management
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "common.h"
 #include "task.h"
 #include "sched.h"

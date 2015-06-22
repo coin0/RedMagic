@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      ramfs.c - block devices based on RAM
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "common.h"
 #include "device.h"
 #include "klog.h"

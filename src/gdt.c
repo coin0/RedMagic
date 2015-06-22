@@ -1,4 +1,10 @@
-// per-cpu GDTs
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      gdt.c - setup per-cpu GDT entries for the X86 architecture
+ *
+ *      2015 Lin Coin - initial version
+ */
 
 #include "common.h"
 #include "gdt.h"

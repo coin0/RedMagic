@@ -1,4 +1,10 @@
-// buffer IOs of block devices
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      bbuf.c - block buffer layer for the IOs of block devices
+ *
+ *      2015 Lin Coin - initial version
+ */
 
 #include "common.h"
 #include "device.h"

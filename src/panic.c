@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      panic.c - system utilities in emergency situations
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "debug.h"
 #include "print.h"
 #include "system.h"

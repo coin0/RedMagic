@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      mutex.c - kernel space mutex locks
+ *
+ *      2015 Lin Coin - referred to the implementation in GNU/Linux
+ */
+
 #include "common.h"
 #include "locking.h"
 #include "task.h"

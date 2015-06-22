@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      rtc.c - CMOS real-time clock source
+ *
+ *      2015 Lin Coin - initial version, some parts of code is from xv6
+ */
+
 #include "common.h"
 #include "rtc.h"
 #include "string.h"

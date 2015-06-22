@@ -1,4 +1,10 @@
-/* spin lock */
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      spinlock.c - CPU-level busy lock implementation
+ *
+ *      2015 Lin Coin - initial version
+ */
 
 #include "common.h"
 #include "locking.h"

@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      mm.c - memory management for 32-bit paging
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "print.h"
 #include "debug.h"
 #include "string.h"

@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      ioapic.c - IO-APIC for Multi-Processor model
+ *
+ *      2015 Lin Coin - most of code is borrowed from xv6 and FreeBSD
+ */
+
 #include "common.h"
 #include "mp.h"
 #include "klog.h"

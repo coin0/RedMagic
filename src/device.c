@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      device.c - hardware irrelevant device frameworks
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "common.h"
 #include "device.h"
 #include "klog.h"

@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      elf.c - GNU/Linux compatible ELF library
+ *
+ *      2015 Lin Coin - initial version, some of code is from hurlex's tutorial
+ */
+
 #include "common.h"
 #include "string.h"
 #include "elf.h"

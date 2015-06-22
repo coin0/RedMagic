@@ -1,5 +1,10 @@
-// timer.c -- Initialises the PIT, and handles clock updates.
-//            Written for JamesM's kernel development tutorials.
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      timer.c - management for different clock sources
+ *
+ *      2015 Lin Coin - initial version, PIT code is from JamesM's tutorials
+ */
 
 #include "common.h"
 #include "timer.h"

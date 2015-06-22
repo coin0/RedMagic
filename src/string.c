@@ -1,3 +1,12 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      string.c - handle memory & string in byte
+ *
+ *      2015 Lin Coin - initial version, some functions are referred to
+ *                      xv6 and hurlex tutorial
+ */
+
 #include "common.h"
 
 void memcpy(_u8 * dest, const _u8 * src, _u32 len)

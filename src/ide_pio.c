@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      ide_pio.c - IDE driver for PIO mode
+ *
+ *      2015 Lin Coin - based on the IDE driver of xv6
+ */
+
 // Simple PIO-based (non-DMA) IDE driver code.
 
 #include "common.h"

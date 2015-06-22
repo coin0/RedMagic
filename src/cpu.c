@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      cpu.c - hardware irrelevant management for Multi-Processor model
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "common.h"
 #include "cpu.h"
 #include "list.h"

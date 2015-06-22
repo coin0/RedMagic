@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      mproc.c - multi-processor initialization and management for X86
+ *
+ *      2015 Lin Coin - initial version, some of code is from xv6
+ */
+
 #include "common.h"
 #include "mp.h"
 #include "paging.h"

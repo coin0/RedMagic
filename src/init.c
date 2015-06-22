@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      init.c - initial entry of multi-tasking
+ *
+ *      2015 Lin Coin - initial version
+ */
+
 #include "common.h"
 #include "task.h"
 #include "print.h"

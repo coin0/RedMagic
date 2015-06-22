@@ -1,5 +1,10 @@
 /*
- *   entry of C code for bootstrap processor
+ *      Red Magic 1996 - 2015
+ *
+ *      main.c - entry of C code for bootstrap processor and application 
+ *               processors
+ *
+ *      2015 Lin Coin - initial version
  */
 
 #include "common.h"

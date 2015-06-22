@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      printk.c - formatted outputs to the console
+ *
+ *      2015 Lin Coin - initial version, referred to Linux/glibc
+ */
+
 #include "string.h"
 #include "print.h"
 #include "C80.h"

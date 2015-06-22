@@ -1,3 +1,11 @@
+/*
+ *      Red Magic 1996 - 2015
+ *
+ *      lapic.c - local APIC code for intel chipset
+ *
+ *      2015 Lin Coin - initial version based on xv6
+ */
+
 #include "common.h"
 #include "mp.h"
 #include "klog.h"
