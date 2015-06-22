@@ -33,7 +33,7 @@ extern dev_t *get_dev_by_name(const char *name);
 #include "bbuf.h"
 
 typedef struct {
-	int (*read_block) (buf_cache_t *, uint_t);
+	int (*read_block) (buf_cache_t *);
 	int (*write_block) (buf_cache_t *);
 } blk_dev_ops_t;
 
@@ -45,12 +45,14 @@ typedef struct blk_dev {
 	list_head_t io;
 	blk_dev_ops_t *ops;
 	mutex_t lock;
+	void *meta;
 } blk_dev_t;
 
 // functions
 extern int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks);
-extern size_t bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data);
-extern size_t bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data);
+extern int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data);
+extern int bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data);
+extern int bdev_sync_buffer(blk_dev_t * bdev);
 
 // default devices
 #include "ramfs.h"

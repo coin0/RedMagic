@@ -12,6 +12,8 @@
 #define B_DIRTY  0x4		// buffer needs to be written to disk
 #define B_UNUSED 0x8		// newly initialized buffer
 
+#define MAX_BGET_RETRY 1
+
 // define this struct for the thread waiting on specific buffer
 typedef struct {
 	thread_t *threadp;
@@ -22,6 +24,12 @@ static buf_cache_t *get_buffer(blk_dev_t * bdev, uint_t blkno);
 static int release_buffer(buf_cache_t * buf);
 static int wait_buffer(buf_cache_t * buf);
 static int notify_buffer(buf_cache_t * buf);
+static int sync_buffer(blk_dev_t * bdev);
+static void cache_buffer(buf_cache_t * buf);
+static int update_buffer(buf_cache_t * buf);
+
+static void queue_buffer(blk_dev_t * bdev, buf_cache_t * buf);
+static void dequeue_buffer(blk_dev_t * bdev, buf_cache_t * buf);
 
 int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks)
 {
@@ -48,33 +56,118 @@ int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks)
 	return OK;
 }
 
-size_t bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data)
+int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data)
 {
 	buf_cache_t *buf;
 	size_t size;
+	int status = OK;
 
 	buf = get_buffer(bdev, blkno);
-	if (buf == NULL)
-		PANIC("No buffers available");
-	if (!(buf->flags & B_VALID))
-		bdev->ops->read_block(buf, blkno);
-
+	log_dbg(LOG_BLOCK "ReadBuf: dev 0x%08X, blkno 0x%08X\n", bdev, blkno);
+	if (!(buf->flags & B_VALID)) {
+		status = update_buffer(buf);
+		if (status == OK)
+			buf->flags |= B_VALID;
+	}
 	size = sizeof(buf->data);
 	memcpy(data, buf->data, size);
 	release_buffer(buf);
 
-	return size;
+	return status;
 }
 
-size_t bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data)
+int bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data)
 {
-	// coin front
-	return 0;
+	buf_cache_t *buf;
+	size_t size;
+	int status = OK;
+
+	buf = get_buffer(bdev, blkno);
+	log_dbg(LOG_BLOCK "WriteBuf: dev 0x%08X, blkno 0x%08X\n", bdev, blkno);
+	size = sizeof(buf->data);
+	memcpy(buf->data, data, size);
+	buf->flags |= B_DIRTY;
+
+	cache_buffer(buf);
+	release_buffer(buf);
+
+	return status;
+}
+
+int bdev_sync_buffer(blk_dev_t * bdev)
+{
+	return sync_buffer(bdev);
+}
+
+static int update_buffer(buf_cache_t * buf)
+{
+	blk_dev_t *bdev = buf->bdev;
+	int status = OK;
+
+	mutex_lock(&bdev->lock);
+	status = bdev->ops->read_block(buf);
+	mutex_unlock(&bdev->lock);
+
+	return status;
+}
+
+static void cache_buffer(buf_cache_t * buf)
+{
+	blk_dev_t *bdev = buf->bdev;
+
+	mutex_lock(&bdev->lock);
+	queue_buffer(bdev, buf);
+	mutex_unlock(&bdev->lock);
+}
+
+// return >0 indicating num of blocks failed to flush
+static int sync_buffer(blk_dev_t * bdev)
+{
+	buf_cache_t *buf, *tmp;
+	int status, rv = 0;
+
+	// find dirty blocks and flush to block device
+	mutex_lock(&bdev->lock);
+	list_for_each_entry_safe(buf, tmp, &bdev->io, io) {
+		if (buf->flags & B_DIRTY) {
+			status = bdev->ops->write_block(buf);
+			if (status == OK) {
+				dequeue_buffer(bdev, buf);
+				buf->flags &= ~B_DIRTY;
+			} else
+				rv++;
+		}
+	}
+	mutex_unlock(&bdev->lock);
+
+	return rv;
+}
+
+// caller should hold device lock
+static void queue_buffer(blk_dev_t * bdev, buf_cache_t * buf)
+{
+	buf_cache_t *tmp;
+
+	// if buffer is already in queue, move, otherwise, add
+	list_for_each_entry(tmp, &bdev->io, io) {
+		if (tmp == buf) {
+			list_move_tail(&buf->io, &bdev->io);
+			return;
+		}
+	}
+	list_add_tail(&buf->io, &bdev->io);
+}
+
+// caller should hold device lock
+static void dequeue_buffer(blk_dev_t * bdev, buf_cache_t * buf)
+{
+	list_del(&buf->io);
 }
 
 static buf_cache_t *get_buffer(blk_dev_t * bdev, uint_t blkno)
 {
 	buf_cache_t *buf;
+	int retry = 0;
 
       retry:
 
@@ -104,14 +197,23 @@ static buf_cache_t *get_buffer(blk_dev_t * bdev, uint_t blkno)
 		    || (buf->flags & B_UNUSED)) {
 			buf->bdev = bdev;
 			buf->blkno = blkno;
-			buf->flags |= B_BUSY;
-			buf->flags &= ~B_UNUSED;
+
+			// reset flag and set busy
+			buf->flags = B_BUSY;
 			mutex_unlock(&bdev->lock);
 			return buf;
 		}
 	}
 
 	mutex_unlock(&bdev->lock);
+
+	// no available buffers, flush dirty buffers and try again
+	if (retry++ < MAX_BGET_RETRY) {
+		sync_buffer(bdev);
+		goto retry;
+	}
+	PANIC("No buffers available");
+
 	return NULL;
 }
 

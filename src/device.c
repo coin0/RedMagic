@@ -10,7 +10,7 @@ static blk_dev_ops_t com_blk_dev_ops;
 static void __init_dev_common(dev_t * dev);
 static void __init_blk_dev_common(dev_t * dev);
 static int bdev_common_write_block(buf_cache_t * buf);
-static int bdev_common_read_block(buf_cache_t * buf, uint_t blkno);
+static int bdev_common_read_block(buf_cache_t * buf);
 
 /* device list */
 static dev_t devices[] = {
@@ -89,7 +89,7 @@ static int bdev_common_write_block(buf_cache_t * buf)
 	return OK;
 }
 
-static int bdev_common_read_block(buf_cache_t * buf, uint_t blkno)
+static int bdev_common_read_block(buf_cache_t * buf)
 {
 	return OK;
 }

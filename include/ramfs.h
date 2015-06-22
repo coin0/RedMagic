@@ -5,6 +5,16 @@
 #error "include device.h instead"
 #endif
 
+#include "common.h"
+#include "locking.h"
+#include "list.h"
+
+typedef struct {
+	list_head_t rw;
+	uchar_t *ramhead;
+	mutex_t ramlock;
+} dev_ramfs_t;
+
 extern int init_ramfs(dev_t * dev);
 
 #endif

@@ -53,5 +53,6 @@ typedef enum {
 #define LOG_INIT        "Init    :"
 #define LOG_MP          "MP      :"
 #define LOG_DEV         "Device  :"
+#define LOG_BLOCK       "Block   :"
 
 #endif

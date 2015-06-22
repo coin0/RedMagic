@@ -24,6 +24,7 @@ int K_INIT(void *args)
 	dev_t *dev;
 	blk_dev_t *bdev;
 	uchar_t a[BLOCK_SIZE];
+	uint_t i = 0;
 
 	create_thread(u, NULL);
 
@@ -31,7 +32,8 @@ int K_INIT(void *args)
 	printk("%s\n", dev->name);
 	bdev = (blk_dev_t *) (dev->ptr);
 	while (1) {
-		bdev_read_buffer(bdev, 0, a);
+		bdev_sync_buffer(bdev);
+		bdev_read_buffer(bdev, i++ % 100, a);
 	}
 	//create_thread(v, NULL);
 
@@ -47,7 +49,7 @@ int u(void *args)
 	dev = get_dev_by_name("ramfs");
 	bdev = (blk_dev_t *) (dev->ptr);
 	while (1) {
-		bdev_read_buffer(bdev, 0, a);
+		bdev_write_buffer(bdev, 1, a);
 	}
 	return 0;
 }
