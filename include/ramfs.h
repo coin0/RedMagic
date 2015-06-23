@@ -11,7 +11,7 @@
 
 typedef struct {
 	list_head_t rw;
-	uchar_t *ramhead;
+	char *ramhead;
 	mutex_t ramlock;
 } dev_ramfs_t;
 

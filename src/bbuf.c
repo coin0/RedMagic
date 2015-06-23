@@ -13,11 +13,6 @@
 #include "sched.h"
 #include "klog.h"
 
-#define B_BUSY   0x1		// buffer is locked by some process
-#define B_VALID  0x2		// buffer has been read from disk
-#define B_DIRTY  0x4		// buffer needs to be written to disk
-#define B_UNUSED 0x8		// newly initialized buffer
-
 #define MAX_BGET_RETRY 1
 
 // define this struct for the thread waiting on specific buffer
@@ -62,7 +57,7 @@ int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks)
 	return OK;
 }
 
-int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data)
+int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, char *data)
 {
 	buf_cache_t *buf;
 	size_t size;
@@ -71,6 +66,10 @@ int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data)
 	buf = get_buffer(bdev, blkno);
 	log_dbg(LOG_BLOCK "ReadBuf: dev 0x%08X, blkno 0x%08X\n", bdev, blkno);
 	if (!(buf->flags & B_VALID)) {
+		// if dirty, sync
+		if (buf->flags & B_DIRTY)
+			if (sync_buffer(bdev) != OK)
+				goto sync_failed;
 		status = update_buffer(buf);
 		if (status == OK)
 			buf->flags |= B_VALID;
@@ -80,9 +79,15 @@ int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data)
 	release_buffer(buf);
 
 	return status;
+
+      sync_failed:
+	log_err(LOG_BLOCK "ReadBuf: sync failed, dev 0x%08X, blkno 0x%08X\n",
+		bdev, blkno);
+	release_buffer(buf);
+	return -2;
 }
 
-int bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, uchar_t * data)
+int bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, char *data)
 {
 	buf_cache_t *buf;
 	size_t size;

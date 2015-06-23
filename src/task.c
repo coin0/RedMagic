@@ -90,14 +90,14 @@ static task_t *__create_task(task_group_t * task_group,
 			     thread_id_t thread_id, int (*fn) (void *),
 			     void *arg)
 {
-	task_t *taskp;
-	mmc_t *mmcp;
+	task_t *taskp = NULL;
+	mmc_t *mmcp = NULL;
 
 	// + create task struct and set the task as INIT status
 	taskp = (task_t *) kmalloc(sizeof(task_t));
 	if (taskp == NULL) {
 		log_err("could not allocate task struct\n");
-		return 0;
+		goto c_err;
 	}
 	bzero(taskp, sizeof(task_t));
 	taskp->status = T_INIT;
@@ -157,6 +157,10 @@ static task_t *__create_task(task_group_t * task_group,
 	return taskp;
 
       c_err:
+	if (taskp != NULL)
+		kfree(taskp);
+	if (mmcp != NULL)
+		kfree(mmcp);
 
 	// this 0 stands for failure
 	return NULL;
@@ -177,8 +181,8 @@ thread_id_t create_thread(int (*fn) (void *), void *arg)
 
 static thread_t *__create_thread(task_t * task, int (*fn) (void *), void *arg)
 {
-	thread_t *threadp;
-	void *stackp;
+	thread_t *threadp = NULL;
+	void *stackp = NULL;
 	addr_t top;
 
 	// alloc thread struct
@@ -235,6 +239,8 @@ static thread_t *__create_thread(task_t * task, int (*fn) (void *), void *arg)
 	return threadp;
 
       thr_err:
+	if (threadp != NULL)
+		kfree(threadp);
 	return NULL;
 }
 
@@ -255,6 +261,10 @@ static int verify_task_id(task_group_t * tgrp, task_id_t tid)
 static void __finish_thread()
 {
 	// TODO ... looks lots of work to do
+	// clean struct in runq
+	// clean thread struct
+	// clean task struct
+	// clean stack
 	printk("Finished \n");
 	while (1) ;
 }

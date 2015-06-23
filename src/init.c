@@ -15,6 +15,7 @@
 #include "timer.h"
 #include "rtc.h"
 #include "device.h"
+#include "string.h"
 
 int v1(void *args);
 int v2(void *args);
@@ -31,8 +32,7 @@ int K_INIT(void *args)
 {
 	dev_t *dev;
 	blk_dev_t *bdev;
-	uchar_t a[BLOCK_SIZE];
-	uint_t i = 0;
+	char a[BLOCK_SIZE];
 
 	create_thread(u, NULL);
 
@@ -40,8 +40,8 @@ int K_INIT(void *args)
 	printk("%s\n", dev->name);
 	bdev = (blk_dev_t *) (dev->ptr);
 	while (1) {
-		bdev_sync_buffer(bdev);
-		bdev_read_buffer(bdev, i++ % 100, a);
+		bdev_read_buffer(bdev, 0, a);
+		printk("[R]%s ", a);
 	}
 	//create_thread(v, NULL);
 
@@ -52,12 +52,16 @@ int u(void *args)
 {
 	dev_t *dev;
 	blk_dev_t *bdev;
-	uchar_t a[BLOCK_SIZE];
+	uint_t i = 0;
+	char a[BLOCK_SIZE];
 
+	bzero(a, BLOCK_SIZE);
 	dev = get_dev_by_name("ramfs");
 	bdev = (blk_dev_t *) (dev->ptr);
 	while (1) {
-		bdev_write_buffer(bdev, 1, a);
+		a[0] = 'a' + i++ % 20;
+		bdev_write_buffer(bdev, 0, a);
+		printk_color(rc_black, rc_red, "[W]%s ", a);
 	}
 	return 0;
 }

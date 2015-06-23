@@ -9,16 +9,16 @@
 
 #include "common.h"
 
-void memcpy(_u8 * dest, const _u8 * src, _u32 len)
+void memcpy(char *dest, const char *src, _u32 len)
 {
 	for (; len != 0; len--) {
 		*dest++ = *src++;
 	}
 }
 
-void memset(void *dest, _u8 val, _u32 len)
+void memset(void *dest, char val, _u32 len)
 {
-	_u8 *dst = (_u8 *) dest;
+	char *dst = (char *)dest;
 
 	for (; len != 0; len--) {
 		*dst++ = val;
@@ -27,7 +27,7 @@ void memset(void *dest, _u8 val, _u32 len)
 
 int memcmp(const void *v1, const void *v2, size_t n)
 {
-	const uchar_t *s1, *s2;
+	const char *s1, *s2;
 
 	s1 = v1;
 	s2 = v2;
