@@ -1,7 +1,10 @@
-;
-; interrupt.s -- Contains interrupt service routine wrappers.
-;                Based on Bran's kernel development tutorials.
-;                Rewritten for JamesM's kernel development tutorials.
+;;
+;;      Red Magic 1996 - 2015
+;;
+;;      interrupt.s - X86 interrupt service routine wrappers
+;;
+;;      2015 Lin Coin - based on Bran's tutorial and JamesM's tutorial
+;;
 
 ; load interrupt descriptor table
 [GLOBAL idt_flush]    ; Allows the C code to call idt_flush().

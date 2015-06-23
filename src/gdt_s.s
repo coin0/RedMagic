@@ -1,3 +1,11 @@
+;;
+;;      Red Magic 1996 - 2015
+;;
+;;      gdt_s.s - ASM code for X86 segmentation support
+;;
+;;      2015 Lin Coin - initial version
+;;
+
 [GLOBAL gdt_flush]    ; Allows the C code to call gdt_flush().
 
 gdt_flush:

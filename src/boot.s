@@ -1,7 +1,10 @@
-;
-; boot.s -- Kernel start location. Also defines multiboot header.
-; Based on Bran's kernel development tutorial file start.asm
-;
+;;
+;;      Red Magic 1996 - 2015
+;;
+;;      boot.s - kernel boot code for bootstrap processor
+;;
+;;      2015 Lin Coin - initial version, referred to Bran's tutorial
+;;
 
 MBOOT_PAGE_ALIGN    equ 1<<0    ; Load kernel and modules on a page boundary
 MBOOT_MEM_INFO      equ 1<<1    ; Provide your kernel with memory info

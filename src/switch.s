@@ -1,3 +1,11 @@
+;;
+;;      Red Magic 1996 - 2015
+;;
+;;      switch.s - ASM code for task switching
+;;
+;;      2015 Lin Coin - initial version
+;;
+
 ;; task switching & calling
 
 ;; need to enable preemption when RET

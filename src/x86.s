@@ -1,4 +1,12 @@
 ;;
+;;      Red Magic 1996 - 2015
+;;
+;;      x86.s - platform relevant code for X86
+;;
+;;      2015 Lin Coin - initial version
+;;
+
+;;
 ;; tools for X86-32bit
 ;;
 

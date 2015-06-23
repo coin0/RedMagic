@@ -1,3 +1,11 @@
+;;
+;;      Red Magic 1996 - 2015
+;;
+;;      ap_real.s - initial boot code for APs
+;;
+;;      2015 Lin Coin - initial version
+;;
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this is the first step for AP ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
