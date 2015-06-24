@@ -25,6 +25,7 @@ typedef struct buf_cache {
 	list_head_t list;
 	list_head_t io;
 	list_head_t wq;
+	thread_t *usr;
 	char data[BLOCK_SIZE];
 } buf_cache_t;
 

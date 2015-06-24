@@ -45,6 +45,7 @@ int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks)
 		buf->bdev = bdev;
 		buf->blkno = 0;
 		buf->flags = B_UNUSED;
+		buf->usr = NULL;
 
 		// link the buffer and zero IO & waiting list
 		list_add_tail(&buf->list, &bdev->list);
@@ -188,8 +189,10 @@ static buf_cache_t *get_buffer(blk_dev_t * bdev, uint_t blkno)
 		if (buf->flags & B_UNUSED)
 			continue;
 		if (buf->bdev == bdev && buf->blkno == blkno) {
-			if (!(buf->flags & B_BUSY) && list_empty(&buf->wq)) {
+			if (!(buf->flags & B_BUSY)
+			    && (buf->usr == NULL)) {
 				buf->flags |= B_BUSY;
+				buf->usr = get_curr_thread();
 				mutex_unlock(&bdev->lock);
 				return buf;
 			} else {
@@ -211,6 +214,7 @@ static buf_cache_t *get_buffer(blk_dev_t * bdev, uint_t blkno)
 
 			// reset flag and set busy
 			buf->flags = B_BUSY;
+			buf->usr = get_curr_thread();
 			mutex_unlock(&bdev->lock);
 			return buf;
 		}
@@ -232,9 +236,11 @@ static int release_buffer(buf_cache_t * buf)
 {
 	blk_dev_t *bdev = buf->bdev;
 
+	ASSERT(buf->usr == get_curr_thread());
 	mutex_lock(&bdev->lock);
 	list_move(&buf->list, &bdev->list);
 	buf->flags &= ~B_BUSY;
+	buf->usr = NULL;
 	mutex_unlock(&bdev->lock);
 
 	return notify_buffer(buf);
