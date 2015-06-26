@@ -35,6 +35,7 @@ int K_INIT(void *args)
 	char a[BLOCK_SIZE];
 
 	create_thread(u, NULL);
+	return 0;
 
 	dev = get_dev_by_name("ramfs");
 	printk("%s\n", dev->name);
@@ -54,6 +55,8 @@ int u(void *args)
 	blk_dev_t *bdev;
 	uint_t i = 0;
 	char a[BLOCK_SIZE];
+
+	return 0;
 
 	bzero(a, BLOCK_SIZE);
 	dev = get_dev_by_name("ramfs");

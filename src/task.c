@@ -260,11 +260,24 @@ static int verify_task_id(task_group_t * tgrp, task_id_t tid)
 
 static void __finish_thread()
 {
-	// TODO ... looks lots of work to do
-	// clean struct in runq
-	// clean thread struct
-	// clean task struct
-	// clean stack
-	printk("Finished \n");
+	preempt_disable();
+
+	// clean struct in runq, OK, we only cleanup thread structs when the
+	// task is going to exit.
+	clean_thread_sched();
+	if (check_runnable_threads() == 0) {
+		// coin front
+		// TODO clean thread struct
+		// TODO clean stack
+
+		clean_task_sched();
+		// TODO release resources (mm, addrspaces, etc)
+		// TODO clean task struct
+	}
+	printk("Thread finished \n");
+
+	// coin front - clean sched and check task
+	schedule();
+
 	while (1) ;
 }

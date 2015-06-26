@@ -31,6 +31,8 @@ static thread_t *__do_sched_pior(cpu_state_t * cur);
 
 static int add_task_to_rq(task_t * taskp);
 static int add_thread_to_rq(thread_t * threadp);
+static int remove_thread_from_rq();
+static int __remove_thread_from_rq(cpu_state_t * cpu, thread_t * threadp);
 static void *find_thread_in_rq(thread_t * threadp, list_head_t * q);
 
 #define __set_thread_status(threadp, state) 		\
@@ -63,7 +65,10 @@ void schedule()
 
 	cpu = get_processor();
 	rthread = cpu->rthread;
+	if (rthread->status == T_RUNNING)
+		__set_thread_status(rthread, T_READY);
 	nextp = pick_next_thread(cpu);
+	__set_thread_status(nextp, T_RUNNING);
 	cpu->rthread = nextp;
 
 	// will re-enable preemption in switch_to(_init)
@@ -231,6 +236,40 @@ int init_thread_sched(thread_t * threadp)
 	return add_thread_to_rq(threadp);
 }
 
+int clean_task_sched()
+{
+	set_task_status(T_COMPLETE);
+	get_processor()->rthread = NULL;
+
+	return OK;
+}
+
+int clean_thread_sched()
+{
+	int status;
+
+	status = remove_thread_from_rq();
+	set_thread_status(T_COMPLETE);
+
+	return status;
+}
+
+uint_t check_runnable_threads()
+{
+	thread_t *cur, *threadp;
+	task_t *task;
+	uint_t n = 0;
+
+	cur = get_curr_thread();
+	task = cur->task;
+	list_for_each_entry(threadp, &task->thread_list, thread_list) {
+		if (threadp->status != T_COMPLETE)
+			n++;
+	}
+
+	return n;
+}
+
 /*
  *  following functions, add_* will handle current scheduling queue
  *  before using them, make sure you are holding cpu->sched_lock 
@@ -265,6 +304,27 @@ static int add_thread_to_rq(thread_t * threadp)
 	list_add_tail(&ptr->runq, &cpu->runq);
 	spin_unlock_irqrestore(&cpu->rq_lock);
 	__set_thread_status(threadp, T_READY);
+
+	return OK;
+}
+
+static int remove_thread_from_rq()
+{
+	return __remove_thread_from_rq(get_processor(), get_curr_thread());
+}
+
+static int __remove_thread_from_rq(cpu_state_t * cpu, thread_t * threadp)
+{
+	rthread_list_t *entry;
+
+	spin_lock_irqsave(&cpu->rq_lock);
+	entry = find_thread_in_rq(threadp, &cpu->runq);
+	if (entry == NULL)
+		return -1;
+	list_del(&entry->runq);
+	if (kfree(entry) != OK)
+		return -2;
+	spin_unlock_irqrestore(&cpu->rq_lock);
 
 	return OK;
 }

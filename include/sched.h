@@ -43,6 +43,10 @@ typedef struct {
 int init_task_sched(task_t * taskp);
 int init_thread_sched(thread_t * threadp);
 
+// cleanup task and thread scheduling structures
+int clean_task_sched();
+int clean_thread_sched();
+
 // get current running task
 extern task_t *get_curr_task();
 extern thread_t *get_curr_thread();
@@ -61,4 +65,5 @@ extern int wake_up(thread_t * threadp);
 extern void pause(uint_t sec);
 extern void check_thread_alarms();
 
+extern uint_t check_runnable_threads();
 #endif
