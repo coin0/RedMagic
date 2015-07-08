@@ -266,7 +266,6 @@ static void __finish_thread()
 	// task is going to exit.
 	clean_thread_sched();
 	if (check_runnable_threads() == 0) {
-		// coin front
 		// TODO clean thread struct
 		// TODO clean stack
 
@@ -276,7 +275,7 @@ static void __finish_thread()
 	}
 	printk("Thread finished \n");
 
-	// coin front - clean sched and check task
+	// TODO - clean sched and check task
 	schedule();
 
 	while (1) ;

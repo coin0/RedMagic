@@ -19,6 +19,7 @@
 #include "cpu.h"
 #include "string.h"
 #include "device.h"
+#include "fs.h"
 
 multiboot_t *mbootp;
 
@@ -64,7 +65,7 @@ int main(multiboot_t * mbp)
 
 	// initialize devices and rootfs
 	init_dev();
-	//init_root_fs();
+	init_root_fs();
 
 	// start all APs
 	if (mpinfo.ismp)

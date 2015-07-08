@@ -15,6 +15,9 @@
 
 #define MAX_BGET_RETRY 1
 
+#define BB_READ  1
+#define BB_WRITE 0
+
 // define this struct for the thread waiting on specific buffer
 typedef struct {
 	thread_t *threadp;
@@ -31,6 +34,9 @@ static int update_buffer(buf_cache_t * buf);
 
 static void queue_buffer(blk_dev_t * bdev, buf_cache_t * buf);
 static void dequeue_buffer(blk_dev_t * bdev, buf_cache_t * buf);
+
+static int bdev_rw_seq(int rw, blk_dev_t * bdev, uint_t index, size_t nblks,
+		       char *buf);
 
 int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks)
 {
@@ -188,6 +194,7 @@ static buf_cache_t *get_buffer(blk_dev_t * bdev, uint_t blkno)
 		// skip newly initialized buffer
 		if (buf->flags & B_UNUSED)
 			continue;
+		// TODO need a FIFO waiting list, potential starving issues
 		if (buf->bdev == bdev && buf->blkno == blkno) {
 			if (!(buf->flags & B_BUSY)
 			    && (buf->usr == NULL)) {
@@ -282,4 +289,45 @@ static int notify_buffer(buf_cache_t * buf)
 	mutex_unlock(&bdev->lock);
 
 	return rv;
+}
+
+//
+// external utilities
+//
+
+// following functions are used to read/write blocks in sequence to a block device
+static int bdev_rw_seq(int rw, blk_dev_t * bdev, uint_t index, size_t nblks,
+		       char *buf)
+{
+	char *p;
+	int i, status;
+
+	ASSERT(nblks != 0);
+	for (p = buf, i = 0; nblks > 0; nblks--) {
+		if (rw == BB_READ)
+			status = bdev_read_buffer(bdev, index + i, p);
+		else
+			status = bdev_write_buffer(bdev, index + i, p);
+		if (status != OK) {
+			log_err(LOG_BLOCK,
+				"read/write failed, bdev:0x%08X index:%u", bdev,
+				index + i);
+			return -2;
+		}
+		// move to the next block
+		p += bdev->block_size;
+		i++;
+	}
+
+	return OK;
+}
+
+int bdev_read_seq(blk_dev_t * bdev, uint_t index, size_t nblks, char *buf)
+{
+	return bdev_rw_seq(BB_READ, bdev, index, nblks, buf);
+}
+
+int bdev_write_seq(blk_dev_t * bdev, uint_t index, size_t nblks, char *buf)
+{
+	return bdev_rw_seq(BB_WRITE, bdev, index, nblks, buf);
 }

@@ -11,6 +11,10 @@
  *   buffer IO
  */
 
+#ifdef BLOCK_SIZE
+#error "conflict! BLOCK_SIZE"
+#endif
+
 #define BLOCK_SIZE 512
 
 #define B_BUSY   0x1		// buffer is locked by some process
