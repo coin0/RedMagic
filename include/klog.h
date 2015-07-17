@@ -54,6 +54,7 @@ typedef enum {
 #define LOG_MP          "MP      :"
 #define LOG_DEV         "Device  :"
 #define LOG_BLOCK       "Block   :"
+#define LOG_RAMFS       "Ramfs   :"
 #define LOG_FILESYS     "Filesys :"
 #define LOG_CFS         "CFS     :"
 

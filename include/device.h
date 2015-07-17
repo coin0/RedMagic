@@ -4,6 +4,7 @@
 #include "common.h"
 #include "list.h"
 #include "locking.h"
+#include "klog.h"
 
 #define MAX_DEVICES 32
 
@@ -53,15 +54,18 @@ extern int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks);
 extern int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, char *data);
 extern int bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, char *data);
 extern int bdev_sync_buffer(blk_dev_t * bdev);
+extern blk_dev_t *get_bdev_by_name(const char *name);
 
-int bdev_read_seq(blk_dev_t * bdev, uint_t index, size_t nblks, char *buf);
-int bdev_write_seq(blk_dev_t * bdev, uint_t index, size_t nblks, char *buf);
+int bdev_read_seq(blk_dev_t * bdev, char *buf, uint_t index, size_t nblks);
+int bdev_write_seq(blk_dev_t * bdev, char *buf, uint_t index, size_t nblks);
 
 // inline functions
 static inline size_t bdev_calc_nblks(blk_dev_t * bdev, uint_t len)
 {
-	return (size_t) (len / bdev->block_size +
-			 len % bdev->block_size ? 1 : 0);
+	ASSERT(len >= bdev->block_size);
+
+	return (size_t) ((len / bdev->block_size) +
+			 (len % bdev->block_size ? 1 : 0));
 }
 
 // default devices

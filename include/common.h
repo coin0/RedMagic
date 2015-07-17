@@ -7,6 +7,7 @@
 #define ARCH_X86_32		// build-macro : platform
 
 #include "type.h"
+#include "math.h"
 
 #ifdef ARCH_X86_32
 #include "x86.h"

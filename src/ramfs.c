@@ -13,7 +13,7 @@
 #include "heap.h"
 #include "string.h"
 
-#define RAMFS_PAGES 10
+#define RAMFS_PAGES 100
 #define RAMFS_BUF_BLKS 100
 
 // declarations
@@ -96,6 +96,8 @@ int init_ramfs(dev_t * dev)
 	ramfs->ramhead = fs_head;
 	mutex_init(&ramfs->ramlock);
 	blk_dev->meta = ramfs;
+
+	log_info(LOG_RAMFS "fs_head:0x%08X, npgs:%u\n", fs_head, RAMFS_PAGES);
 
 	return OK;
 

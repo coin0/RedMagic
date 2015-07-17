@@ -18,6 +18,9 @@
 #define BB_READ  1
 #define BB_WRITE 0
 
+#define BB_DEBUG_BUFIO_READ
+#define BB_DEBUG_BUFIO_WRITE
+
 // define this struct for the thread waiting on specific buffer
 typedef struct {
 	thread_t *threadp;
@@ -35,8 +38,8 @@ static int update_buffer(buf_cache_t * buf);
 static void queue_buffer(blk_dev_t * bdev, buf_cache_t * buf);
 static void dequeue_buffer(blk_dev_t * bdev, buf_cache_t * buf);
 
-static int bdev_rw_seq(int rw, blk_dev_t * bdev, uint_t index, size_t nblks,
-		       char *buf);
+static int bdev_rw_seq(int rw, blk_dev_t * bdev, char *buf, uint_t index,
+		       size_t nblks);
 
 int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks)
 {
@@ -70,6 +73,11 @@ int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, char *data)
 	size_t size;
 	int status = OK;
 
+#ifdef BB_DEBUG_BUFIO_READ
+	printk("RD<0x%08X>:%3u ", bdev, blkno);
+	print_memory(data, 1);
+#endif
+
 	buf = get_buffer(bdev, blkno);
 	log_dbg(LOG_BLOCK "ReadBuf: dev 0x%08X, blkno 0x%08X\n", bdev, blkno);
 	if (!(buf->flags & B_VALID)) {
@@ -99,6 +107,11 @@ int bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, char *data)
 	buf_cache_t *buf;
 	size_t size;
 	int status = OK;
+
+#ifdef BB_DEBUG_BUFIO_WRITE
+	printk("WR<0x%08X>:%3u ", bdev, blkno);
+	print_memory(data, 1);
+#endif
 
 	buf = get_buffer(bdev, blkno);
 	log_dbg(LOG_BLOCK "WriteBuf: dev 0x%08X, blkno 0x%08X\n", bdev, blkno);
@@ -296,8 +309,8 @@ static int notify_buffer(buf_cache_t * buf)
 //
 
 // following functions are used to read/write blocks in sequence to a block device
-static int bdev_rw_seq(int rw, blk_dev_t * bdev, uint_t index, size_t nblks,
-		       char *buf)
+static int bdev_rw_seq(int rw, blk_dev_t * bdev, char *buf, uint_t index,
+		       size_t nblks)
 {
 	char *p;
 	int i, status;
@@ -322,12 +335,12 @@ static int bdev_rw_seq(int rw, blk_dev_t * bdev, uint_t index, size_t nblks,
 	return OK;
 }
 
-int bdev_read_seq(blk_dev_t * bdev, uint_t index, size_t nblks, char *buf)
+int bdev_read_seq(blk_dev_t * bdev, char *buf, uint_t index, size_t nblks)
 {
-	return bdev_rw_seq(BB_READ, bdev, index, nblks, buf);
+	return bdev_rw_seq(BB_READ, bdev, buf, index, nblks);
 }
 
-int bdev_write_seq(blk_dev_t * bdev, uint_t index, size_t nblks, char *buf)
+int bdev_write_seq(blk_dev_t * bdev, char *buf, uint_t index, size_t nblks)
 {
-	return bdev_rw_seq(BB_WRITE, bdev, index, nblks, buf);
+	return bdev_rw_seq(BB_WRITE, bdev, buf, index, nblks);
 }

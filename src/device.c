@@ -68,6 +68,17 @@ static void __init_dev_common(dev_t * dev)
 	}
 }
 
+blk_dev_t *get_bdev_by_name(const char *name)
+{
+	dev_t *dev;
+
+	dev = get_dev_by_name(name);
+	if (dev && dev->type == DEV_BLOCK)
+		return dev->ptr;
+	else
+		return NULL;
+}
+
 static void __init_blk_dev_common(dev_t * dev)
 {
 	blk_dev_t *blk_dev;
