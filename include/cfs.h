@@ -1,10 +1,13 @@
 #ifndef CFS_H
 #define CFS_H
 
+#include "common.h"
 #include "fs.h"
 #include "device.h"
+#include "locking.h"
 
 #define CFS_FS_NAME "cfs_v1"
+#define CFS_MAGIC   0xEF0002FE
 
 // inode types
 #define CFS_INO_NULL  0x00
@@ -41,6 +44,7 @@ typedef struct cfs_dinode {
 } __attribute__ ((packed)) cfs_dinode_t;
 
 typedef struct cfs_dsuper {
+	_u32 magic;		// cfs magic
 	_u32 block_size;	// filesystem block size
 	_u32 rooti;		// root inode
 
@@ -73,6 +77,7 @@ typedef struct cfs_inode {
 	_u32 reference;
 	_u8 flags;
 	cfs_dinode_t dinode;
+	spinlock_t ilock;
 } cfs_inode_t;
 
 typedef struct cfs_file {
@@ -87,17 +92,12 @@ typedef struct cfs_dentry {
 
 typedef struct cfs_super {
 	blk_dev_t *bdev;
-	_u8 flag_ro;
 	_u8 flag_dirty;
-	cfs_inode_t *rptr;
+	_u32 reference;
 	super_ops_t *s_op;
 	cfs_dsuper_t dsuper;
+	spinlock_t s_lock;
 } cfs_super_t;
-
-typedef struct {
-	_u32 block_size;
-	_u32 max_blocks;
-} cfs_fmt_opt_t;
 
 extern int initfs_cfs();
 

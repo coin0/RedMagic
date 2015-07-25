@@ -272,6 +272,7 @@ static void __finish_thread()
 		clean_task_sched();
 		// TODO release resources (mm, addrspaces, etc)
 		// TODO clean task struct
+		// TODO copy and switch to kernel reserved stack
 	}
 	printk("Thread finished \n");
 

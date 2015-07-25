@@ -13,5 +13,6 @@ extern int strcmp(const char *str1, const char *str2);
 extern char *strcpy(char *dest, const char *src);
 extern char *strcat(char *dest, const char *src);
 extern int strlen(const char *src);
+extern int atoi(const char *str);
 
 #endif

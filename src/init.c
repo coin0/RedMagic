@@ -38,19 +38,6 @@ int K_INIT(void *args)
 
 int w(void *args)
 {
-/*
-	dev_t *dev;
-	blk_dev_t *bdev;
-	char a[BLOCK_SIZE];
-
-	dev = get_dev_by_name("ramfs");
-	printk("%s\n", dev->name);
-	bdev = (blk_dev_t *) (dev->ptr);
-	while (1) {
-		bdev_read_buffer(bdev, 0, a);
-		printk("[R]%s ", a);
-	}
-*/
 	create_thread(v, NULL);
 	return 0;
 }
@@ -69,7 +56,7 @@ int u(void *args)
 	bdev = (blk_dev_t *) (dev->ptr);
 	while (1) {
 		a[0] = 'a' + i++ % 20;
-		bdev_write_buffer(bdev, 0, a);
+		bdev_write_block(bdev, 0, a);
 		printk_color(rc_black, rc_red, "[W]%s ", a);
 	}
 	return 0;

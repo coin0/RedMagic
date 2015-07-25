@@ -51,8 +51,8 @@ typedef struct blk_dev {
 
 // functions
 extern int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks);
-extern int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, char *data);
-extern int bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, char *data);
+extern int bdev_read_block(blk_dev_t * bdev, uint_t blkno, char *data);
+extern int bdev_write_block(blk_dev_t * bdev, uint_t blkno, char *data);
 extern int bdev_sync_buffer(blk_dev_t * bdev);
 extern blk_dev_t *get_bdev_by_name(const char *name);
 

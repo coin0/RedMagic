@@ -133,6 +133,8 @@ static void start_smp()
 		// same as comments above, we allocate temporary stack space 
 		// for other processors, remember to free it when init task is
 		// setup to run
+		// TODO this should be reserved kernel stack, for task resched
+		// when task is about to exit, all stacks will be released
 		stack = get_free_page();
 		if (stack == NULL)
 			PANIC("No memory for AP stack");

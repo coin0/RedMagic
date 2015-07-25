@@ -18,8 +18,8 @@
 #define BB_READ  1
 #define BB_WRITE 0
 
-#define BB_DEBUG_BUFIO_READ
-#define BB_DEBUG_BUFIO_WRITE
+//#define BB_DEBUG_BUFIO_READ
+//#define BB_DEBUG_BUFIO_WRITE
 
 // define this struct for the thread waiting on specific buffer
 typedef struct {
@@ -27,6 +27,8 @@ typedef struct {
 	list_head_t wq;
 } bufq_thread_t;
 
+static int read_buffer(blk_dev_t * bdev, uint_t blkno, char *data);
+static int write_buffer(blk_dev_t * bdev, uint_t blkno, char *data);
 static buf_cache_t *get_buffer(blk_dev_t * bdev, uint_t blkno);
 static int release_buffer(buf_cache_t * buf);
 static int wait_buffer(buf_cache_t * buf);
@@ -67,7 +69,7 @@ int bdev_init_buffer_cache(blk_dev_t * bdev, size_t blks)
 	return OK;
 }
 
-int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, char *data)
+static int read_buffer(blk_dev_t * bdev, uint_t blkno, char *data)
 {
 	buf_cache_t *buf;
 	size_t size;
@@ -102,7 +104,7 @@ int bdev_read_buffer(blk_dev_t * bdev, uint_t blkno, char *data)
 	return -2;
 }
 
-int bdev_write_buffer(blk_dev_t * bdev, uint_t blkno, char *data)
+static int write_buffer(blk_dev_t * bdev, uint_t blkno, char *data)
 {
 	buf_cache_t *buf;
 	size_t size;
@@ -318,9 +320,9 @@ static int bdev_rw_seq(int rw, blk_dev_t * bdev, char *buf, uint_t index,
 	ASSERT(nblks != 0);
 	for (p = buf, i = 0; nblks > 0; nblks--) {
 		if (rw == BB_READ)
-			status = bdev_read_buffer(bdev, index + i, p);
+			status = read_buffer(bdev, index + i, p);
 		else
-			status = bdev_write_buffer(bdev, index + i, p);
+			status = write_buffer(bdev, index + i, p);
 		if (status != OK) {
 			log_err(LOG_BLOCK,
 				"read/write failed, bdev:0x%08X index:%u", bdev,
@@ -343,4 +345,14 @@ int bdev_read_seq(blk_dev_t * bdev, char *buf, uint_t index, size_t nblks)
 int bdev_write_seq(blk_dev_t * bdev, char *buf, uint_t index, size_t nblks)
 {
 	return bdev_rw_seq(BB_WRITE, bdev, buf, index, nblks);
+}
+
+int bdev_read_block(blk_dev_t * bdev, uint_t blkno, char *data)
+{
+	return read_buffer(bdev, blkno, data);
+}
+
+int bdev_write_block(blk_dev_t * bdev, uint_t blkno, char *data)
+{
+	return write_buffer(bdev, blkno, data);
 }

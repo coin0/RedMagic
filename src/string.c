@@ -113,3 +113,23 @@ int strlen(const char *src)
 
 	return (eos - src - 1);
 }
+
+#define is_digit(c)     ((c) >= '0' && (c) <= '9')
+
+int atoi(const char *str)
+{
+	const char *p;
+	int sign = 1;
+	int max, sum;
+
+	for (p = str; *p == ' '; p++) ;
+	// get max positive interger like 0100 0000 ... 0000
+	max = ~(1 << (8 * sizeof(int) - 1));
+	if (*p == '-')
+		sign = -1;
+	for (sum = 0; sum <= max && *p != '\0'; p++)
+		if (is_digit(*p))
+			sum = sum * 10 + (*p - '0');
+
+	return (int)(sign * sum);
+}
