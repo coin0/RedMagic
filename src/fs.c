@@ -12,14 +12,13 @@
 #include "heap.h"
 #include "list.h"
 #include "locking.h"
+#include "mount.h"
 
 static fs_list_t fs_info = {
 	.file_systems = NULL
 };
 
-static mount_table_t mnt_tab;
-
-static filesystem_t *get_fs_list()
+filesystem_t *fs_list()
 {
 	return fs_info.file_systems;
 }
@@ -30,7 +29,7 @@ int register_filesystem(filesystem_t * fs)
 
 	// add to tail of the list
 	mutex_lock(&fs_info.lock);
-	last = get_fs_list();
+	last = fs_list();
 	if (last != NULL) {
 		while (last->next) {
 			if (!strcmp(last->name, fs->name))
@@ -54,15 +53,14 @@ void init_root_fs()
 
 	// initialize kernel fs_type table and mount table
 	mutex_init(&fs_info.lock);
-	INIT_LIST_HEAD(&mnt_tab.mnt_next);
-	mutex_init(&mnt_tab.mtab_lock);
+	init_mtab();
 
 	// the first registered filesystem will be initial rootfs
 	// root device is based on the ramfs
-	ASSERT(get_fs_list() == NULL);
+	ASSERT(fs_list() == NULL);
 	// register the first filesystem as rootfs type and use RAM as rootdev
 	initfs_cfs();
-	if ((rootfs = get_fs_list()) == NULL)
+	if ((rootfs = fs_list()) == NULL)
 		PANIC("root filesystem not registered");
 	rootdev = get_bdev_by_name("ramfs");
 	if (rootdev == NULL)
@@ -90,22 +88,17 @@ int fs_mount(blk_dev_t * bdev, filesystem_t * fs, char *dir_name,
 	mount_point_t *mpp;
 	int status = OK;
 
-	mutex_lock(&mnt_tab.mtab_lock);
+	// TODO
+	//mutex_lock(&mnt_tab.mtab_lock);
 
 	// check mount table if mountpoints already exits
 	// and move to the tail
-	list_for_each_entry(mpp, &mnt_tab.mnt_next, mnt_next) {
-		if (bdev == mpp->mnt_dev) {
-			if (strcmp(dir_name, mpp->mnt_dir) == 0) {
-				log_info(LOG_FILESYS
-					 "dev 0x%08X is already mounted on %s",
-					 bdev, dir_name);
-				status = -1;
-				goto out;
-			}
-		}
+	if (check_dup_mountpoint(bdev, dir_name) != OK) {
+		log_info(LOG_FILESYS
+			 "dev 0x%08X is already mounted on %s", bdev, dir_name);
+		status = -1;
+		goto out;
 	}
-
 	// create a new mountpoint
 	mpp = (mount_point_t *) kmalloc(sizeof(mount_point_t));
 	if (mpp == NULL) {
@@ -129,10 +122,11 @@ int fs_mount(blk_dev_t * bdev, filesystem_t * fs, char *dir_name,
 			mpp->mnt_flags |= MNT_READONLY;
 
 	// add to tail of mount table
-	list_add_tail(&mpp->mnt_next, &mnt_tab.mnt_next);
+	add_to_mtab(mpp);
 
       out:
-	mutex_unlock(&mnt_tab.mtab_lock);
+	// TODO
+	//mutex_unlock(&mnt_tab.mtab_lock);
 
 	return status;
 }
@@ -140,20 +134,15 @@ int fs_mount(blk_dev_t * bdev, filesystem_t * fs, char *dir_name,
 int fs_umount(char *dir_name, kv_option_t * opt)
 {
 	mount_point_t *mpp;
-	int found = 0, status = OK;
+	int status = OK;
 
-	mutex_lock(&mnt_tab.mtab_lock);
+	// TODO
+	//mutex_lock(&mnt_tab.mtab_lock);
 
 	// search mountpoint name "dir_name" in reverse to get the latest 
 	// filesystem mounted
-	list_for_each_entry_reverse(mpp, &mnt_tab.mnt_next, mnt_next) {
-		if (strcmp(dir_name, mpp->mnt_dir) == 0) {
-			found = 1;
-			break;
-		}
-	}
-
-	if (!found) {
+	mpp = lookup_mountpoint_by_dir(dir_name);
+	if (mpp == NULL) {
 		log_err(LOG_FILESYS "mountpoint %s not found\n", dir_name);
 		status = -1;
 		goto out;
@@ -165,23 +154,12 @@ int fs_umount(char *dir_name, kv_option_t * opt)
 		goto out;
 	}
 
-	list_del(&mnt_tab.mnt_next);
+	del_from_mtab(mpp);
 	kfree(mpp);
 
       out:
-	mutex_unlock(&mnt_tab.mtab_lock);
+	// TODO
+	//mutex_unlock(&mnt_tab.mtab_lock);
 
 	return status;
-}
-
-// caller need to hold mnt_tab.mtab_lock
-super_block_t *mnt_lookup_super_by_bdev(blk_dev_t * bdev)
-{
-	mount_point_t *mpp;
-
-	list_for_each_entry_reverse(mpp, &mnt_tab.mnt_next, mnt_next)
-	    if (mpp->mnt_dev == bdev)
-		return mpp->mnt_sb;
-
-	return NULL;
 }

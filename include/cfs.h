@@ -94,7 +94,6 @@ typedef struct cfs_super {
 	blk_dev_t *bdev;
 	_u8 flag_dirty;
 	_u32 reference;
-	super_ops_t *s_op;
 	cfs_dsuper_t dsuper;
 	spinlock_t s_lock;
 } cfs_super_t;

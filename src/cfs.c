@@ -12,6 +12,7 @@
 #include "heap.h"
 #include "klog.h"
 #include "locking.h"
+#include "mount.h"
 
 #define CFS_ROOT_INODE    0
 
@@ -35,14 +36,6 @@ static int cfs_free_inode(inode_t * inode);
 static int cfs_sync_fs(super_block_t * sb);
 static inode_t *cfs_get_inode(uint_t ino);
 static int cfs_put_inode(inode_t * inode);
-
-static super_ops_t cfs_super_operations = {
-	.alloc_inode = cfs_alloc_inode,
-	.free_inode = cfs_free_inode,
-	.get_inode = cfs_get_inode,
-	.put_inode = cfs_put_inode,
-	.sync_fs = cfs_sync_fs
-};
 
 //
 // static private functions
@@ -367,7 +360,7 @@ static super_block_t *cfs_mount(blk_dev_t * bdev, kv_option_t * opt)
 	int status;
 
 	// if already mounted, just increase reference
-	sb = (cfs_super_t *) mnt_lookup_super_by_bdev(bdev);
+	sb = (cfs_super_t *) lookup_super_by_bdev(bdev);
 	if (sb != NULL) {
 		spin_lock(&sb->s_lock);
 		sb->reference++;
@@ -390,7 +383,6 @@ static super_block_t *cfs_mount(blk_dev_t * bdev, kv_option_t * opt)
 	spin_lock_init(&sb->s_lock);
 	sb->bdev = bdev;
 	sb->flag_dirty = 0;
-	sb->s_op = &cfs_super_operations;
 	sb->reference = 0;
 
 	return (super_block_t *) sb;
@@ -417,7 +409,7 @@ static int cfs_umount(super_block_t * sb, kv_option_t * opt)
 
 	// sync disks and check references of inodes, if everything is ok
 	// release superblock, root inode
-	cfs_sb->s_op->sync_fs(sb);
+	cfs_sync_fs(sb);
 	status = cfs_destroy_inode_cache(cfs_sb);
 	if (status != OK)
 		return -2;

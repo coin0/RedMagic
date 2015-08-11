@@ -2,7 +2,6 @@
 #define LOCKING_H
 
 #include "common.h"
-#include "task.h"
 
 typedef struct {
 	uint_t rlock;
@@ -61,10 +60,12 @@ extern void spin_unlock_irqrestore(spinlock_t * lock);
  *   Mutexlock
  */
 
+#include "task.h"
+
 typedef struct {
 	rawlock_t mlock;
 	const char *name;
-	thread_t *owner;
+	struct thread *owner;
 	list_head_t wq;
 	spinlock_t wlock;
 } mutex_t;

@@ -6,6 +6,7 @@
 #include "list.h"
 #include "paging.h"
 #include "timer.h"
+#include "locking.h"
 
 // stack size for each thread
 #define T_STACK_SIZE 0x1000
@@ -45,6 +46,11 @@ typedef struct task {
 	mmc_t *mm;
 	page_directory_t *addr_space;
 	struct task *parent;
+
+	// TODO file resource list with flock
+	//list_head_t file_list;
+	//spinlock_t flock;
+
 	list_head_t thread_list;
 	list_head_t task_list;
 } __attribute__ ((packed)) task_t;
